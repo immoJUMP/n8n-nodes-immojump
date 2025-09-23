@@ -23,11 +23,64 @@ export class ImmoJumpTrigger implements INodeType {
         default: 'immobilie.created,immobilie.status_changed',
         description: 'Comma separated list',
       },
+      {
+        displayName: 'Filter: Status From',
+        name: 'filterStatusFrom',
+        type: 'string',
+        default: '',
+      },
+      {
+        displayName: 'Filter: Status To',
+        name: 'filterStatusTo',
+        type: 'string',
+        default: '',
+      },
+      {
+        displayName: 'Filter: Tag Name',
+        name: 'filterTagName',
+        type: 'string',
+        default: '',
+      },
+      {
+        displayName: 'Filter: Immobilie ID',
+        name: 'filterImmobilieId',
+        type: 'string',
+        default: '',
+      },
+      {
+        displayName: 'Deduplicate Events',
+        name: 'dedupe',
+        type: 'boolean',
+        default: true,
+      },
     ],
   };
 
   async webhook(this: IWebhookFunctions) {
     const body = this.getBodyData();
+    // Dedupe by envelope id
+    const dedupe = this.getNodeParameter('dedupe') as boolean;
+    if (dedupe) {
+      const store = this.getWorkflowStaticData('global');
+      const seen = store.__immojump_seen_ids || (store.__immojump_seen_ids = []);
+      const id = body?.id;
+      if (id && seen.includes(id)) return { workflowData: [[/* drop */]] };
+      if (id) {
+        seen.push(id);
+        if (seen.length > 500) seen.shift();
+      }
+    }
+    // Filters
+    const allowed = (this.getNodeParameter('eventTypes') as string).split(',').map(s => s.trim()).filter(Boolean);
+    if (allowed.length && !allowed.includes(body?.type)) return { workflowData: [[/* drop */]] };
+    const fFrom = (this.getNodeParameter('filterStatusFrom') as string).trim();
+    const fTo = (this.getNodeParameter('filterStatusTo') as string).trim();
+    const fTag = (this.getNodeParameter('filterTagName') as string).trim();
+    const fObj = (this.getNodeParameter('filterImmobilieId') as string).trim();
+    if (fObj && body?.object?.id !== fObj) return { workflowData: [[/* drop */]] };
+    if (fFrom && (body?.payload?.old_status_name || body?.payload?.old_status_id)?.toString() !== fFrom) return { workflowData: [[/* drop */]] };
+    if (fTo && (body?.payload?.new_status_name || body?.payload?.new_status_id)?.toString() !== fTo) return { workflowData: [[/* drop */]] };
+    if (fTag && (body?.payload?.tag_name || body?.payload?.tag_id)?.toString() !== fTag) return { workflowData: [[/* drop */]] };
     return { workflowData: [[{ json: body }]] };
   }
 
@@ -65,4 +118,3 @@ export class ImmoJumpTrigger implements INodeType {
     return true;
   }
 }
-

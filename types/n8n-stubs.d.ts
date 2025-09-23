@@ -31,5 +31,7 @@ declare module 'n8n-core' {
   }
   export interface IWebhookFunctions {
     getBodyData(): any;
+    getNodeParameter(name: string, itemIndex?: number): any;
+    getWorkflowStaticData(scope: 'node' | 'global'): any;
   }
 }
