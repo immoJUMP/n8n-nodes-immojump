@@ -158,8 +158,8 @@ export class ImmoJump implements INodeType {
         const cred = await this.getCredentials('immoJumpApi');
         const baseUrl = (cred.baseUrl as string).replace(/\/$/, '');
         const headers: any = { Authorization: `Bearer ${cred.token}` };
-        // Statuses are global per tenant; no org header needed if API is scoped internally
-        const res = await this.helpers.request({ method: 'GET', uri: `${baseUrl}/api/statuses`, json: true, headers });
+        // Backend registers status_bp at url_prefix='/api/statuses', route '/statuses' → '/api/statuses/statuses'
+        const res = await this.helpers.request({ method: 'GET', uri: `${baseUrl}/api/statuses/statuses`, json: true, headers });
         return (res || []).map((s: any) => ({ name: s.name || `${s.id}`, value: s.id }));
       },
       async getTags(this: IExecuteFunctions) {
