@@ -1,24 +1,47 @@
+# n8n-nodes-immojump
+
 ImmoJump n8n Community Nodes (Trigger + Actions)
 
-This package provides:
-- Credentials: ImmoJump API (base URL, API key/token)
-- Trigger: ImmoJump Trigger (registers a webhook subscription for selected event types)
-- Node: ImmoJump (actions: create immobilie, post feed message)
+[n8n](https://n8n.io/) is a [fair-code licensed](https://docs.n8n.io/reference/license/) workflow automation platform.
 
-Install (local dev)
-- Clone into your n8n custom nodes directory and run `npm install && npm run build`.
-- In n8n, enable community nodes and load this folder.
+[Installation](#installation)
+[Operations](#operations)
+[Credentials](#credentials)
+[Compatibility](#compatibility)
+[Usage](#usage)
+[Resources](#resources)
+[Version history](#version-history)
 
-Credentials
-- Base URL (e.g. https://app.immokalkulation.de)
-- API Token (Bearer token from profile or API key)
-- Organisation ID (optional if encoded in token; otherwise n8n sends `X-Organisation-Id`)
+## Installation
 
-Trigger
-- On node activation, POST /api/integrations/webhooks to register n8n webhook URL.
-- On deactivation, DELETE the created subscription.
+Follow the [installation guide](https://docs.n8n.io/integrations/community-nodes/installation/) in the n8n community nodes documentation.
 
-Actions
-- immobilie.create → POST /api/v2/immobilien
-- feed.post → POST /api/organisation-feed/post
+## Operations
 
+The ImmoJump n8n Community Nodes provide two operations:
+
+* `ImmoJump` - Trigger node
+* `ImmoJump` - Action node
+
+## Credentials
+
+_If users need to authenticate with the app/service, provide details here. You should include prerequisites (such as signing up with the service), available authentication methods, and how to set them up._
+
+## Compatibility
+
+_State the minimum n8n version, as well as which versions you test against. You can also include any known version incompatibility issues._
+
+## Usage
+
+_This is an optional section. Use it to help users with any difficult or confusing aspects of the node._
+
+_By the time users are looking for community nodes, they probably already know n8n basics. But if you expect new users, you can link to the [Try it out](https://docs.n8n.io/try-it-out/) documentation to help them get started._
+
+## Resources
+
+* [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
+* _Link to app/service documentation._
+
+## Version history
+
+_This is another optional section. If your node has multiple versions, include a short description of available versions and what changed, as well as any compatibility impact._

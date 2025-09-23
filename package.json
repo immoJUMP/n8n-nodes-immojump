@@ -1,21 +1,33 @@
 {
   "name": "n8n-nodes-immojump",
   "version": "0.1.0",
-  "description": "n8n community nodes for ImmoJump",
-  "main": "dist/index.js",
+  "description": "n8n community node to work with the Example API",
+  "license": "MIT",
+  "homepage": "https://example.com",
+  "keywords": ["n8n-community-node-package"],
+  "author": { "name": "chris2k20", "email": "chris2k20@cs95.de" },
+  "repository": { "type": "git", "url": "" },
   "scripts": {
-    "build": "tsc"
+    "build": "n8n-node build",
+    "build:watch": "tsc --watch",
+    "dev": "n8n-node dev",
+    "lint": "n8n-node lint",
+    "lint:fix": "n8n-node lint --fix",
+    "release": "n8n-node release",
+    "prepublishOnly": "n8n-node prerelease"
   },
+  "files": ["dist"],
   "n8n": {
-    "credentials": [
-      "./dist/credentials/ImmoJumpApi.credentials.js"
-    ],
-    "nodes": [
-      "./dist/nodes/ImmoJump.node.js",
-      "./dist/nodes/ImmoJumpTrigger.node.js"
-    ]
+    "n8nNodesApiVersion": 1,
+    "credentials": ["dist/credentials/ImmojumpApi.credentials.js"],
+    "nodes": ["dist/nodes/Immojump/Immojump.node.js"]
   },
   "devDependencies": {
-    "typescript": "^5.0.0"
-  }
+    "@n8n/node-cli": "*",
+    "eslint": "9.32.0",
+    "prettier": "3.6.2",
+    "release-it": "^19.0.4",
+    "typescript": "5.9.2"
+  },
+  "peerDependencies": { "n8n-workflow": "*" }
 }
