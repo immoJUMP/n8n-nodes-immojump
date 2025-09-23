@@ -1,0 +1,21 @@
+{
+  "name": "n8n-nodes-immojump",
+  "version": "0.1.0",
+  "description": "n8n community nodes for ImmoJump",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "n8n": {
+    "credentials": [
+      "./dist/credentials/ImmoJumpApi.credentials.js"
+    ],
+    "nodes": [
+      "./dist/nodes/ImmoJump.node.js",
+      "./dist/nodes/ImmoJumpTrigger.node.js"
+    ]
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}

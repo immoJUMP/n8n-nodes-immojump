@@ -1,0 +1,17 @@
+version: '3.8'                                                                                                                                                                                                          
+services:                                                                                               
+  n8n:                                                                                                                                                                                                                    
+    image: n8nio/n8n:latest                                                                                 
+    ports:                                                                                                                                                                                                                  
+    - "5678:5678"                                                                                                                                                                                                           
+    environment:                                                                                                                                                                                                            
+    - N8N_COMMUNITY_PACKAGES_ENABLED=true                                                                   
+    - N8N_DIAGNOSTICS_ENABLED=false                                                                                                                                                                                         
+    - GENERIC_TIMEZONE=Europe/Berlin                                                                                                                                                                                        
+    # Point public webhook URL if you’ll receive webhooks from outside your machine:                                                                                                                                        
+    # - WEBHOOK_URL=https://your-ngrok-domain/webhook                                                                                                                                                                       
+    # If your app calls n8n locally, you can omit WEBHOOK_URL                                                                                                                                                               
+    volumes:                                                                                                
+    - ./n8n_data:/home/node/.n8n                                                                                                                                                                                            
+    # Mount the custom nodes you built:                                                                                                                                                                                     
+    - ../integrations/n8n-nodes-immojump:/home/node/.n8n/custom/immojump
