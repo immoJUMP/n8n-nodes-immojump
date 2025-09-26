@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.0.0...v1.1.0) (2025-09-26)
+
+
+### Features
+
+* new docs ([1d2734f](https://github.com/immoJUMP/n8n-nodes-immojump/commit/1d2734fd9f19d6cd55921346d8e0e2d92c699c1f))
+
 ## 1.0.0 (2025-09-26)
 
 
