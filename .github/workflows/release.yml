@@ -29,7 +29,7 @@ jobs:
           # Release configuration
           release-type: node
           # Use PAT if GITHUB_TOKEN doesn't have enough permissions
-          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.APP_TOKEN }}
 
   build-and-publish:
     needs: release-please
