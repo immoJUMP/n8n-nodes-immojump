@@ -40,7 +40,7 @@ _By the time users are looking for community nodes, they probably already know n
 ## Resources
 
 * [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
-* _Link to app/service documentation._
+* [ImmoJump API documentation](https://docs.immojump.com/)
 
 ## Version history
 
