@@ -240,12 +240,19 @@ export class ImmojumpTrigger implements INodeType {
 		const tagFilters = this.getNodeParameter('tagFilter', []) as string[];
 		const propertyTypeFilters = this.getNodeParameter('propertyTypeFilter', []) as string[];
 
-		const event = bodyData.event as string;
+		const payloadData = (bodyData.payload as IDataObject | undefined);
+		const event = (bodyData.event ?? bodyData.type ?? payloadData?.event) as string | undefined;
 		const immobilie = bodyData.immobilie as IDataObject;
 
 		// Check if this event should trigger
-		if (!events.includes(event)) {
-			return { noWebhookResponse: true };
+		if (!event || !events.includes(event)) {
+			return {
+				webhookResponse: {
+					success: true,
+					ignored: true,
+					reason: event ? 'event_filtered' : 'event_missing',
+				},
+			};
 		}
 
 		// Apply filters based on event type
@@ -271,7 +278,13 @@ export class ImmojumpTrigger implements INodeType {
 		}
 
 		if (!shouldTrigger) {
-			return { noWebhookResponse: true };
+			return {
+				webhookResponse: {
+					success: true,
+					ignored: true,
+					reason: 'filter_mismatch',
+				},
+			};
 		}
 
 		// Return the webhook data
