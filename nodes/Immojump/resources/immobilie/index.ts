@@ -15,13 +15,25 @@ export const immobilieDescription: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Get Many',
-				value: 'getAll',
-				action: 'Get immobilies',
-				description: 'Get many immobilies',
+				name: 'Assign Tag',
+				value: 'assignTag',
+				action: 'Assign tag to immobilie',
+				description: 'Assign a tag to an immobilie',
 				routing: {
 					request: {
-						method: 'GET',
+						method: 'POST',
+						url: '=/immobilies/{{$parameter.immobilieId}}/tags',
+					},
+				},
+			},
+			{
+				name: 'Create',
+				value: 'create',
+				action: 'Create a new immobilie',
+				description: 'Create a new immobilie',
+				routing: {
+					request: {
+						method: 'POST',
 						url: '/immobilies',
 					},
 				},
@@ -39,38 +51,14 @@ export const immobilieDescription: INodeProperties[] = [
 				},
 			},
 			{
-				name: 'Create',
-				value: 'create',
-				action: 'Create a new immobilie',
-				description: 'Create a new immobilie',
+				name: 'Get Many',
+				value: 'getAll',
+				action: 'Get immobilies',
+				description: 'Get many immobilies',
 				routing: {
 					request: {
-						method: 'POST',
+						method: 'GET',
 						url: '/immobilies',
-					},
-				},
-			},
-			{
-				name: 'Update Status',
-				value: 'updateStatus',
-				action: 'Update immobilie status',
-				description: 'Update the status of an immobilie',
-					routing: {
-						request: {
-							method: 'PUT',
-							url: '=/api/statuses/immobilien/{{$parameter.immobilieId}}/status',
-						},
-					},
-			},
-			{
-				name: 'Assign Tag',
-				value: 'assignTag',
-				action: 'Assign tag to immobilie',
-				description: 'Assign a tag to an immobilie',
-				routing: {
-					request: {
-						method: 'POST',
-						url: '=/immobilies/{{$parameter.immobilieId}}/tags',
 					},
 				},
 			},
@@ -83,6 +71,18 @@ export const immobilieDescription: INodeProperties[] = [
 					request: {
 						method: 'DELETE',
 						url: '=/immobilies/{{$parameter.immobilieId}}/tags/{{$parameter.tagName}}',
+					},
+				},
+			},
+			{
+				name: 'Update Status',
+				value: 'updateStatus',
+				action: 'Update immobilie status',
+				description: 'Update the status of an immobilie',
+				routing: {
+					request: {
+						method: 'PUT',
+						url: '=/api/statuses/immobilien/{{$parameter.immobilieId}}/status',
 					},
 				},
 			},
@@ -191,7 +191,7 @@ export const immobilieDescription: INodeProperties[] = [
 	},
 	// Update status parameters
 	{
-		displayName: 'Status',
+		displayName: 'Status Name or ID',
 		name: 'status',
 		type: 'options',
 		displayOptions: {
@@ -205,7 +205,7 @@ export const immobilieDescription: INodeProperties[] = [
 		},
 		default: '',
 		required: true,
-		description: 'The new status for the immobilie',
+		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 		routing: {
 			send: {
 				type: 'body',
@@ -215,7 +215,7 @@ export const immobilieDescription: INodeProperties[] = [
 	},
 	// Tag operations parameters
 	{
-		displayName: 'Tag',
+		displayName: 'Tag Name or ID',
 		name: 'tagName',
 		type: 'options',
 		displayOptions: {
@@ -229,7 +229,7 @@ export const immobilieDescription: INodeProperties[] = [
 		},
 		default: '',
 		required: true,
-		description: 'The tag to assign or remove',
+		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 		routing: {
 			send: {
 				type: 'body',

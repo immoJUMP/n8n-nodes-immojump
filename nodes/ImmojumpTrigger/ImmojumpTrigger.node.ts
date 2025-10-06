@@ -12,6 +12,91 @@ import {
 	type IRequestOptions,
 } from 'n8n-workflow';
 
+type StatusResponse = {
+	id: string | number;
+	name?: string | null;
+};
+
+type TagResponse = {
+	id: string | number;
+	name?: string | null;
+};
+
+type WebhookSummary = {
+	id?: string | number | null;
+};
+
+const isStatusResponse = (value: unknown): value is StatusResponse => {
+	if (typeof value !== 'object' || value === null) {
+		return false;
+	}
+	const candidate = value as Record<string, unknown>;
+	return (
+		('id' in candidate && (typeof candidate.id === 'string' || typeof candidate.id === 'number')) &&
+		('name' in candidate ? typeof candidate.name === 'string' || candidate.name === null || candidate.name === undefined : true)
+	);
+};
+
+const isTagResponse = (value: unknown): value is TagResponse => {
+	if (typeof value !== 'object' || value === null) {
+		return false;
+	}
+	const candidate = value as Record<string, unknown>;
+	return (
+		('id' in candidate && (typeof candidate.id === 'string' || typeof candidate.id === 'number')) &&
+		('name' in candidate ? typeof candidate.name === 'string' || candidate.name === null || candidate.name === undefined : true)
+	);
+};
+
+const isWebhookSummary = (value: unknown): value is WebhookSummary => {
+	return typeof value === 'object' && value !== null && 'id' in value;
+};
+
+const extractId = (value: unknown): string | undefined => {
+	if (typeof value === 'string') {
+		return value;
+	}
+	if (typeof value === 'number') {
+		return String(value);
+	}
+	if (typeof value === 'object' && value !== null && 'id' in value) {
+		const candidate = value as Record<string, unknown>;
+		if (typeof candidate.id === 'string') {
+			return candidate.id;
+		}
+		if (typeof candidate.id === 'number') {
+			return String(candidate.id);
+		}
+	}
+	return undefined;
+};
+
+const parseErrorDetails = (
+	error: unknown,
+): {
+	message?: string;
+	statusCode?: number;
+	responseBody?: unknown;
+} => {
+	const details: { message?: string; statusCode?: number; responseBody?: unknown } = {};
+	if (error instanceof Error && typeof error.message === 'string') {
+		details.message = error.message;
+	}
+	if (typeof error === 'object' && error !== null) {
+		const candidate = error as Record<string, unknown>;
+		if (typeof candidate.message === 'string') {
+			details.message = candidate.message;
+		}
+		if (typeof candidate.statusCode === 'number') {
+			details.statusCode = candidate.statusCode;
+		}
+		if ('responseBody' in candidate) {
+			details.responseBody = candidate.responseBody;
+		}
+	}
+	return details;
+};
+
 export class ImmojumpTrigger implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Immojump Trigger',
@@ -78,7 +163,8 @@ export class ImmojumpTrigger implements INodeType {
 				typeOptions: {
 					loadOptionsMethod: 'getStatuses',
 				},
-				description: 'Only trigger for specific status values',
+				description:
+					'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 			},
 			{
 				displayName: 'Filter by Tag',
@@ -93,7 +179,8 @@ export class ImmojumpTrigger implements INodeType {
 				typeOptions: {
 					loadOptionsMethod: 'getTags',
 				},
-				description: 'Only trigger for specific tags',
+				description:
+					'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 			},
 			{
 				displayName: 'Filter by Property Type',
@@ -107,11 +194,11 @@ export class ImmojumpTrigger implements INodeType {
 				default: [],
 				options: [
 					{ name: 'Eigentumswohnung (ETW)', value: 'ETW' },
-					{ name: 'Mehrfamilienhaus (MFH)', value: 'MFH' },
 					{ name: 'Einfamilienhaus (EFH)', value: 'EFH' },
-					{ name: 'Wohngebäude (WGH)', value: 'WGH' },
 					{ name: 'Gewerbe (GEW)', value: 'GEW' },
+					{ name: 'Mehrfamilienhaus (MFH)', value: 'MFH' },
 					{ name: 'Sonstiges', value: 'Sonstiges' },
+					{ name: 'Wohngebäude (WGH)', value: 'WGH' },
 				],
 				description: 'Only trigger for specific property types',
 			},
@@ -226,13 +313,19 @@ export class ImmojumpTrigger implements INodeType {
 					const response = await this.helpers.request(requestOptions);
 
 					if (Array.isArray(response)) {
+						const statuses = response.filter(isStatusResponse);
 						this.logger.debug('immojumpTrigger.getStatuses response', {
-							count: response.length,
+							count: statuses.length,
 							url: requestOptions.url,
 						});
-						return response.map((status: any) => ({
-							name: status.name || `Status ${status.id}`,
-							value: status.name || status.id,
+						return statuses.map((status) => ({
+							name:
+								typeof status.name === 'string' && status.name.trim() !== ''
+									? status.name
+									: `Status ${status.id}`,
+							value: typeof status.name === 'string' && status.name.trim() !== ''
+								? status.name
+								: String(status.id),
 						}));
 					}
 
@@ -241,15 +334,16 @@ export class ImmojumpTrigger implements INodeType {
 						url: requestOptions.url,
 					});
 					return [];
-				} catch (error: any) {
+				} catch (error: unknown) {
+					const { message, statusCode } = parseErrorDetails(error);
 					this.logger.error('immojumpTrigger.getStatuses failed', {
-						message: error?.message,
-						statusCode: error?.statusCode,
+						message,
+						statusCode,
 						url: requestOptions.url,
 					});
 					return [
 						{ name: 'Debug: API Error', value: 'error' },
-						{ name: `Debug: ${error?.message || 'Unknown error'}`, value: 'debug' },
+						{ name: `Debug: ${message ?? 'Unknown error'}`, value: 'debug' },
 					];
 				}
 			},
@@ -291,13 +385,15 @@ export class ImmojumpTrigger implements INodeType {
 					const response = await this.helpers.request(requestOptions);
 
 					if (Array.isArray(response)) {
+						const tags = response.filter(isTagResponse);
 						this.logger.debug('immojumpTrigger.getTags response', {
-							count: response.length,
+							count: tags.length,
 							url: requestOptions.url,
 						});
-						return response.map((tag: any) => ({
-							name: tag.name || `Tag ${tag.id}`,
-							value: tag.name || tag.id,
+						return tags.map((tag) => ({
+							name:
+								typeof tag.name === 'string' && tag.name.trim() !== '' ? tag.name : `Tag ${tag.id}`,
+							value: typeof tag.name === 'string' && tag.name.trim() !== '' ? tag.name : String(tag.id),
 						}));
 					}
 
@@ -306,15 +402,16 @@ export class ImmojumpTrigger implements INodeType {
 						url: requestOptions.url,
 					});
 					return [];
-				} catch (error: any) {
+				} catch (error: unknown) {
+					const { message, statusCode } = parseErrorDetails(error);
 					this.logger.error('immojumpTrigger.getTags failed', {
-						message: error?.message,
-						statusCode: error?.statusCode,
+						message,
+						statusCode,
 						url: requestOptions.url,
 					});
 					return [
 						{ name: 'Debug: API Error', value: 'error' },
-						{ name: `Debug: ${error?.message || 'Unknown error'}`, value: 'debug' },
+						{ name: `Debug: ${message ?? 'Unknown error'}`, value: 'debug' },
 					];
 				}
 			},
@@ -357,23 +454,29 @@ export class ImmojumpTrigger implements INodeType {
 					webhookId,
 				});
 
-				try {
-					const response = await this.helpers.request(requestOptions);
-					const exists = Array.isArray(response) && response.some((hook: any) => hook.id === webhookId);
-					if (!exists) {
-						delete staticData.webhookId;
+					try {
+						const response = await this.helpers.request(requestOptions);
+						const exists =
+							Array.isArray(response) &&
+							response.some(
+								(hook) =>
+									isWebhookSummary(hook) && hook.id !== null && hook.id !== undefined && String(hook.id) === webhookId,
+							);
+						if (!exists) {
+							delete staticData.webhookId;
+						}
+						this.logger.debug('immojumpTrigger.checkExists result', { webhookId, exists });
+						return exists;
+					} catch (error: unknown) {
+						const { message, statusCode, responseBody } = parseErrorDetails(error);
+						this.logger.error('immojumpTrigger.checkExists failed', {
+							message,
+							statusCode,
+							responseBody,
+						});
+						return false;
 					}
-					this.logger.debug('immojumpTrigger.checkExists result', { webhookId, exists });
-					return exists;
-				} catch (error: any) {
-					this.logger.error('immojumpTrigger.checkExists failed', {
-						message: error?.message,
-						statusCode: error?.statusCode,
-						responseBody: error?.responseBody,
-					});
-					return false;
-				}
-			},
+				},
 
 			async create(this: IHookFunctions): Promise<boolean> {
 				const credentials = await this.getCredentials('immojumpApi');
@@ -414,26 +517,27 @@ export class ImmojumpTrigger implements INodeType {
 					webhookUrl,
 				});
 
-				try {
-					const response = await this.helpers.request(requestOptions);
-					const webhookId = response?.id as string | undefined;
-					if (webhookId) {
-						const staticData = this.getWorkflowStaticData('node');
-						staticData.webhookId = webhookId;
-						this.logger.debug('immojumpTrigger.create success', { webhookId });
-						return true;
+					try {
+						const response = await this.helpers.request(requestOptions);
+						const webhookId = extractId(response);
+						if (webhookId) {
+							const staticData = this.getWorkflowStaticData('node');
+							staticData.webhookId = webhookId;
+							this.logger.debug('immojumpTrigger.create success', { webhookId });
+							return true;
+						}
+						this.logger.warn('immojumpTrigger.create missing webhook id in response');
+					} catch (error: unknown) {
+						const { message, statusCode, responseBody } = parseErrorDetails(error);
+						this.logger.error('immojumpTrigger.create failed', {
+							message,
+							statusCode,
+							responseBody,
+						});
 					}
-					this.logger.warn('immojumpTrigger.create missing webhook id in response');
-				} catch (error: any) {
-					this.logger.error('immojumpTrigger.create failed', {
-						message: error?.message,
-						statusCode: error?.statusCode,
-						responseBody: error?.responseBody,
-					});
-				}
 
-				return false;
-			},
+					return false;
+				},
 
 			async delete(this: IHookFunctions): Promise<boolean> {
 				const staticData = this.getWorkflowStaticData('node');
@@ -469,24 +573,25 @@ export class ImmojumpTrigger implements INodeType {
 					webhookId,
 				});
 
-				try {
-					await this.helpers.request(requestOptions);
-					delete staticData.webhookId;
-					this.logger.debug('immojumpTrigger.delete success', { webhookId });
-					return true;
-				} catch (error: any) {
-					if (error?.statusCode === 404) {
+					try {
+						await this.helpers.request(requestOptions);
 						delete staticData.webhookId;
+						this.logger.debug('immojumpTrigger.delete success', { webhookId });
 						return true;
+					} catch (error: unknown) {
+						const { message, statusCode, responseBody } = parseErrorDetails(error);
+						if (statusCode === 404) {
+							delete staticData.webhookId;
+							return true;
+						}
+						this.logger.error('immojumpTrigger.delete failed', {
+							message,
+							statusCode,
+							responseBody,
+						});
+						return false;
 					}
-					this.logger.error('immojumpTrigger.delete failed', {
-						message: error?.message,
-						statusCode: error?.statusCode,
-						responseBody: error?.responseBody,
-					});
-					return false;
-				}
+				},
 			},
-		},
-	};
+		};
 }
