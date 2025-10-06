@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.2.0...v1.3.0) (2025-10-06)
+
+
+### Features
+
+* add pagination and stats to home views with updated database config ([5a406be](https://github.com/immoJUMP/n8n-nodes-immojump/commit/5a406be4b7eae343b594e6df5637e91da4d04690))
+
 ## [1.2.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.1.0...v1.2.0) (2025-10-06)
 
 
