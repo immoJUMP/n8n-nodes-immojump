@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.3.0...v1.4.0) (2025-10-06)
+
+
+### Features
+
+* remove unused user and company resources from Immojump node ([afb1e88](https://github.com/immoJUMP/n8n-nodes-immojump/commit/afb1e88f91569aed52b7a743e75b775369b44bc7))
+
 ## [1.3.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.2.0...v1.3.0) (2025-10-06)
 
 
