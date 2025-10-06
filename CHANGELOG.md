@@ -2,22 +2,23 @@
 
 ## [1.1.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.0.0...v1.1.0) (2025-09-26)
 
-
 ### Features
 
-* new docs ([1d2734f](https://github.com/immoJUMP/n8n-nodes-immojump/commit/1d2734fd9f19d6cd55921346d8e0e2d92c699c1f))
+* **docs**: improve documentation and configuration ([6f7fa30](https://github.com/immoJUMP/n8n-nodes-immojump/commit/6f7fa30))
+  - Enhanced documentation with ImmoJUMP API references
+  - Configured environment variables for production deployment
+  - Updated GitHub workflow for better CI/CD pipeline
 
 ## 1.0.0 (2025-09-26)
 
-
 ### Features
 
-* add `updateStatus` and `setTags` ([d62f66d](https://github.com/immoJUMP/n8n-nodes-immojump/commit/d62f66d994ee4fec0fb20d78b21fd563bedb3374))
-* first version ([ac254e3](https://github.com/immoJUMP/n8n-nodes-immojump/commit/ac254e363d3356f6f6c8c3924cb3aeee8fcda7af))
-* upate github workflow ([2394e6a](https://github.com/immoJUMP/n8n-nodes-immojump/commit/2394e6a83b33b71ae306c31995bd9fc8c15e42b1))
-* use new schema ([0a75cac](https://github.com/immoJUMP/n8n-nodes-immojump/commit/0a75cac9c5cc36aaef508284222adb8eb5867332))
-
+* **core**: add ImmoJUMP n8n integration capabilities ([ac254e3](https://github.com/immoJUMP/n8n-nodes-immojump/commit/ac254e3))
+  - Initial release of n8n-nodes-immojump package
+  - Add `updateStatus` and `setTags` operations ([d62f66d](https://github.com/immoJUMP/n8n-nodes-immojump/commit/d62f66d))
+  - Implement new API schema support ([0a75cac](https://github.com/immoJUMP/n8n-nodes-immojump/commit/0a75cac))
+  - Configure GitHub workflow for automated releases ([2394e6a](https://github.com/immoJUMP/n8n-nodes-immojump/commit/2394e6a))
 
 ### Bug Fixes
 
-* Backend registers status_bp ([929650c](https://github.com/immoJUMP/n8n-nodes-immojump/commit/929650cfa519dfcbf76b761c5783a0c2ba890b6c))
+* **backend**: ensure proper status blueprint registration ([929650c](https://github.com/immoJUMP/n8n-nodes-immojump/commit/929650c))

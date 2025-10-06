@@ -33,7 +33,8 @@
       "dist/credentials/ImmojumpApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/Immojump/Immojump.node.js"
+      "dist/nodes/Immojump/Immojump.node.js",
+      "dist/nodes/ImmojumpTrigger/ImmojumpTrigger.node.js"
     ]
   },
   "devDependencies": {

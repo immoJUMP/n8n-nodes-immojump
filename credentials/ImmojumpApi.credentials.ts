@@ -15,7 +15,7 @@ export class ImmojumpApi implements ICredentialType {
   properties: INodeProperties[] = [
     { displayName: 'Base URL', name: 'baseUrl', type: 'string', default: 'http://localhost:8080', required: true },
     { displayName: 'Bearer Token', name: 'token', type: 'string', typeOptions: { password: true }, required: true, default: '' },
-    { displayName: 'Organisation ID', name: 'organisationId', type: 'string', default: '' },
+    { displayName: 'Organisation ID', name: 'organisationId', type: 'string', default: '', required: true },
   ];
 
   authenticate: IAuthenticateGeneric = {
