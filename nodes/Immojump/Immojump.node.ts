@@ -5,8 +5,6 @@ import {
 	type INodePropertyOptions,
 	type IRequestOptions,
 } from 'n8n-workflow';
-import { userDescription } from './resources/user';
-import { companyDescription } from './resources/company';
 import { immobilieDescription } from './resources/immobilie';
 
 type StatusResponse = {
@@ -96,22 +94,12 @@ export class Immojump implements INodeType {
 				noDataExpression: true,
 				options: [
 					{
-						name: 'User',
-						value: 'user',
-					},
-					{
-						name: 'Company',
-						value: 'company',
-					},
-					{
 						name: 'Immobilie',
 						value: 'immobilie',
 					},
 				],
-				default: 'user',
+				default: 'immobilie',
 			},
-			...userDescription,
-			...companyDescription,
 			...immobilieDescription,
 		],
 	};

@@ -3,6 +3,116 @@ import type { INodeProperties } from 'n8n-workflow';
 const showOnlyForImmobilie = {
 	resource: ['immobilie'],
 };
+3
+const immobilieTypeOptions = [
+	{ name: 'Eigentumswohnung (ETW)', value: 'ETW' },
+	{ name: 'Mehrfamilienhaus (MFH)', value: 'MFH' },
+	{ name: 'Einfamilienhaus (EFH)', value: 'EFH' },
+	{ name: 'Wohn- und Geschäftshaus (WGH)', value: 'WGH' },
+	{ name: 'Gewerbeimmobilie (GEW)', value: 'GEW' },
+	{ name: 'Sonstiges', value: 'Sonstiges' },
+];
+
+const createBodyExpression = `={{ (() => {
+	const body: Record<string, any> = {
+		type: $parameter.type,
+		name: $parameter.name,
+		organisation_id: $credentials.organisationId,
+	};
+	const additional = $parameter.additionalFields ?? {};
+	const daten: Record<string, any> = {};
+
+	if (additional.adresse) {
+		daten.adresse = additional.adresse;
+	}
+	if (additional.kaufpreis !== undefined) {
+		daten.kaufpreis = additional.kaufpreis;
+	}
+	if (additional.flaeche !== undefined) {
+		daten.flaeche = additional.flaeche;
+	}
+	if (additional.baujahr !== undefined) {
+		daten.baujahr = additional.baujahr;
+	}
+	if (additional.zustand) {
+		daten.zustand = additional.zustand;
+	}
+	if (additional.datenJson) {
+		const raw = additional.datenJson;
+		const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+		if (parsed && typeof parsed === 'object') {
+			Object.assign(daten, parsed as Record<string, any>);
+		}
+	}
+
+	if (Object.keys(daten).length > 0) {
+		body.daten = daten;
+	}
+
+	return body;
+})() }}`;
+
+const updateBodyExpression = `={{ (() => {
+	const payload: Record<string, any> = {};
+	const fields = $parameter.updateFields ?? {};
+
+	if (fields.name) {
+		payload.name = fields.name;
+	}
+	if (fields.type) {
+		payload.type = fields.type;
+	}
+
+	const numericMappings: Array<[keyof typeof fields, string]> = [
+		['acquisitionPrice', 'acquisition_price'],
+		['salePrice', 'sale_price'],
+		['askingPrice', 'asking_price'],
+		['targetSalePrice', 'target_sale_price'],
+	];
+
+	for (const [sourceKey, targetKey] of numericMappings) {
+		const value = (fields as Record<string, unknown>)[sourceKey];
+		if (value !== undefined) {
+			payload[targetKey] = value;
+		}
+	}
+
+	if (fields.previewImageId !== undefined) {
+		payload.preview_image_id = fields.previewImageId || null;
+	}
+
+	const daten: Record<string, any> = {};
+	if (fields.adresse) {
+		daten.adresse = fields.adresse;
+	}
+	if (fields.kaufpreis !== undefined) {
+		daten.kaufpreis = fields.kaufpreis;
+	}
+	if (fields.flaeche !== undefined) {
+		daten.flaeche = fields.flaeche;
+	}
+	if (fields.baujahr !== undefined) {
+		daten.baujahr = fields.baujahr;
+	}
+	if (fields.zustand) {
+		daten.zustand = fields.zustand;
+	}
+	if (fields.datenJson) {
+		const raw = fields.datenJson;
+		const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+		if (parsed && typeof parsed === 'object') {
+			Object.assign(daten, parsed as Record<string, any>);
+		}
+	}
+
+	if (fields.resetDaten === true) {
+		payload.daten = {};
+	} else if (Object.keys(daten).length > 0) {
+		payload.daten = daten;
+	}
+
+	return payload;
+})() }}`;
 
 export const immobilieDescription: INodeProperties[] = [
 	{
@@ -15,62 +125,64 @@ export const immobilieDescription: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'Assign Tag',
-				value: 'assignTag',
-				action: 'Assign tag to immobilie',
-				description: 'Assign a tag to an immobilie',
+				name: 'List',
+				value: 'getAll',
+				action: 'List immobilien',
+				description: 'List immobilien for the current organisation',
 				routing: {
 					request: {
-						method: 'POST',
-						url: '=/immobilies/{{$parameter.immobilieId}}/tags',
-					},
-				},
-			},
-			{
-				name: 'Create',
-				value: 'create',
-				action: 'Create a new immobilie',
-				description: 'Create a new immobilie',
-				routing: {
-					request: {
-						method: 'POST',
-						url: '/immobilies',
+						method: 'GET',
+						url: '=/api/v2/immobilien?organisation_id={{$credentials.organisationId}}&page={{$parameter.page || 1}}&per_page={{$parameter.perPage || 20}}',
 					},
 				},
 			},
 			{
 				name: 'Get',
 				value: 'get',
-				action: 'Get an immobilie',
-				description: 'Get the data of a single immobilie',
+				action: 'Get immobilie',
+				description: 'Get a single immobilie by ID',
 				routing: {
 					request: {
 						method: 'GET',
-						url: '=/immobilies/{{$parameter.immobilieId}}',
+						url: '=/api/v2/immobilien/{{$parameter.immobilieId}}',
 					},
 				},
 			},
 			{
-				name: 'Get Many',
-				value: 'getAll',
-				action: 'Get immobilies',
-				description: 'Get many immobilies',
+				name: 'Create',
+				value: 'create',
+				action: 'Create immobilie',
+				description: 'Create a new immobilie in the current organisation',
 				routing: {
 					request: {
-						method: 'GET',
-						url: '/immobilies',
+						method: 'POST',
+						url: '/api/v2/immobilien',
+						body: createBodyExpression,
 					},
 				},
 			},
 			{
-				name: 'Remove Tag',
-				value: 'removeTag',
-				action: 'Remove tag from immobilie',
-				description: 'Remove a tag from an immobilie',
+				name: 'Update',
+				value: 'update',
+				action: 'Update immobilie',
+				description: 'Patch an existing immobilie',
+				routing: {
+					request: {
+						method: 'PATCH',
+						url: '=/api/v2/immobilien/{{$parameter.immobilieId}}',
+						body: updateBodyExpression,
+					},
+				},
+			},
+			{
+				name: 'Delete',
+				value: 'delete',
+				action: 'Delete immobilie',
+				description: 'Delete an immobilie by ID',
 				routing: {
 					request: {
 						method: 'DELETE',
-						url: '=/immobilies/{{$parameter.immobilieId}}/tags/{{$parameter.tagName}}',
+						url: '=/api/v2/immobilien/{{$parameter.immobilieId}}',
 					},
 				},
 			},
@@ -83,91 +195,107 @@ export const immobilieDescription: INodeProperties[] = [
 					request: {
 						method: 'PUT',
 						url: '=/api/statuses/immobilien/{{$parameter.immobilieId}}/status',
+						body: '={{ ({ status_id: $parameter.statusId }) }}',
+					},
+				},
+			},
+			{
+				name: 'Set Tags',
+				value: 'setTags',
+				action: 'Set immobilie tags',
+				description: 'Replace the tags assigned to an immobilie',
+				routing: {
+					request: {
+						method: 'PUT',
+						url: '=/api/immobilie/{{$parameter.immobilieId}}/tags',
+						body: '={{ $parameter.tagIds ?? [] }}',
 					},
 				},
 			},
 		],
 		default: 'getAll',
 	},
-	// Get operation parameters
 	{
 		displayName: 'Immobilie ID',
 		name: 'immobilieId',
 		type: 'string',
+		required: true,
 		displayOptions: {
 			show: {
 				...showOnlyForImmobilie,
-				operation: ['get', 'updateStatus', 'assignTag', 'removeTag'],
+				operation: ['get', 'update', 'delete', 'updateStatus', 'setTags'],
 			},
 		},
 		default: '',
-		required: true,
-		description: "The immobilie's ID",
-	},
-	// Create operation parameters
-	{
-		displayName: 'Title',
-		name: 'title',
-		type: 'string',
-		displayOptions: {
-			show: {
-				...showOnlyForImmobilie,
-				operation: ['create'],
-			},
-		},
-		default: '',
-		required: true,
-		description: 'The title of the immobilie',
-		routing: {
-			send: {
-				type: 'body',
-				property: 'title',
-			},
-		},
+		description: 'The immobilie ID',
 	},
 	{
-		displayName: 'Address',
-		name: 'address',
-		type: 'string',
-		displayOptions: {
-			show: {
-				...showOnlyForImmobilie,
-				operation: ['create'],
-			},
-		},
-		default: '',
-		required: true,
-		description: 'The address of the immobilie',
-		routing: {
-			send: {
-				type: 'body',
-				property: 'address',
-			},
-		},
-	},
-	{
-		displayName: 'Price',
-		name: 'price',
+		displayName: 'Page',
+		name: 'page',
 		type: 'number',
+		default: 1,
+		typeOptions: {
+			minValue: 1,
+		},
+		displayOptions: {
+			show: {
+				...showOnlyForImmobilie,
+				operation: ['getAll'],
+			},
+		},
+		description: 'Page number (>= 1)',
+	},
+	{
+		displayName: 'Per Page',
+		name: 'perPage',
+		type: 'number',
+		default: 20,
+		typeOptions: {
+			minValue: 1,
+			maxValue: 100,
+		},
+		displayOptions: {
+			show: {
+				...showOnlyForImmobilie,
+				operation: ['getAll'],
+			},
+		},
+		description: 'Number of results per page (1-100)',
+	},
+	{
+		displayName: 'Name',
+		name: 'name',
+		type: 'string',
+		required: true,
 		displayOptions: {
 			show: {
 				...showOnlyForImmobilie,
 				operation: ['create'],
 			},
 		},
-		default: 0,
-		description: 'The price of the immobilie',
-		routing: {
-			send: {
-				type: 'body',
-				property: 'price',
-			},
-		},
+		default: '',
+		description: 'Human readable name for the immobilie',
 	},
 	{
-		displayName: 'Property Type',
+		displayName: 'Type',
 		name: 'type',
 		type: 'options',
+		options: immobilieTypeOptions,
+		required: true,
+		displayOptions: {
+			show: {
+				...showOnlyForImmobilie,
+				operation: ['create'],
+			},
+		},
+		default: 'ETW',
+	},
+	{
+		displayName: 'Additional Fields',
+		name: 'additionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
 		displayOptions: {
 			show: {
 				...showOnlyForImmobilie,
@@ -175,123 +303,178 @@ export const immobilieDescription: INodeProperties[] = [
 			},
 		},
 		options: [
-			{ name: 'Apartment', value: 'apartment' },
-			{ name: 'House', value: 'house' },
-			{ name: 'Commercial', value: 'commercial' },
-			{ name: 'Land', value: 'land' },
+			{
+				displayName: 'Adresse',
+				name: 'adresse',
+				type: 'string',
+				default: '',
+			},
+			{
+				displayName: 'Kaufpreis',
+				name: 'kaufpreis',
+				type: 'number',
+				default: 0,
+			},
+			{
+				displayName: 'Fläche (m²)',
+				name: 'flaeche',
+				type: 'number',
+				default: 0,
+			},
+			{
+				displayName: 'Baujahr',
+				name: 'baujahr',
+				type: 'number',
+				default: 0,
+			},
+			{
+				displayName: 'Zustand',
+				name: 'zustand',
+				type: 'string',
+				default: '',
+			},
+			{
+				displayName: 'Raw Daten (JSON)',
+				name: 'datenJson',
+				type: 'string',
+				default: '',
+				description: 'Optional JSON string merged into the immobilie daten payload',
+			},
 		],
-		default: 'apartment',
-		description: 'The type of the immobilie',
-		routing: {
-			send: {
-				type: 'body',
-				property: 'type',
+	},
+	{
+		displayName: 'Update Fields',
+		name: 'updateFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: {
+			show: {
+				...showOnlyForImmobilie,
+				operation: ['update'],
 			},
 		},
+		options: [
+			{
+				displayName: 'Name',
+				name: 'name',
+				type: 'string',
+				default: '',
+			},
+			{
+				displayName: 'Type',
+				name: 'type',
+				type: 'options',
+				options: immobilieTypeOptions,
+				default: 'ETW',
+			},
+			{
+				displayName: 'Ankaufspreis (EUR)',
+				name: 'acquisitionPrice',
+				type: 'number',
+				default: 0,
+			},
+			{
+				displayName: 'Verkaufspreis (EUR)',
+				name: 'salePrice',
+				type: 'number',
+				default: 0,
+			},
+			{
+				displayName: 'Angebotspreis (EUR)',
+				name: 'askingPrice',
+				type: 'number',
+				default: 0,
+			},
+			{
+				displayName: 'Zielverkaufspreis (EUR)',
+				name: 'targetSalePrice',
+				type: 'number',
+				default: 0,
+			},
+			{
+				displayName: 'Preview Image ID',
+				name: 'previewImageId',
+				type: 'string',
+				default: '',
+				description: 'UUID of an uploaded image to use as preview',
+			},
+			{
+				displayName: 'Adresse',
+				name: 'adresse',
+				type: 'string',
+				default: '',
+			},
+			{
+				displayName: 'Kaufpreis',
+				name: 'kaufpreis',
+				type: 'number',
+				default: 0,
+			},
+			{
+				displayName: 'Fläche (m²)',
+				name: 'flaeche',
+				type: 'number',
+				default: 0,
+			},
+			{
+				displayName: 'Baujahr',
+				name: 'baujahr',
+				type: 'number',
+				default: 0,
+			},
+			{
+				displayName: 'Zustand',
+				name: 'zustand',
+				type: 'string',
+				default: '',
+			},
+			{
+				displayName: 'Raw Daten (JSON)',
+				name: 'datenJson',
+				type: 'string',
+				default: '',
+				description: 'Optional JSON string merged into the immobilie daten payload',
+			},
+			{
+				displayName: 'Reset Daten',
+				name: 'resetDaten',
+				type: 'boolean',
+				default: false,
+				description: 'Send an empty object to clear existing daten before applying updates',
+			},
+		],
 	},
-	// Update status parameters
 	{
-		displayName: 'Status Name or ID',
-		name: 'status',
+		displayName: 'Status',
+		name: 'statusId',
 		type: 'options',
+		typeOptions: {
+			loadOptionsMethod: 'getStatuses',
+		},
+		required: true,
 		displayOptions: {
 			show: {
 				...showOnlyForImmobilie,
 				operation: ['updateStatus'],
 			},
 		},
-		typeOptions: {
-			loadOptionsMethod: 'getStatuses',
-		},
 		default: '',
-		required: true,
-		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
-		routing: {
-			send: {
-				type: 'body',
-				property: 'status_id',
-			},
-		},
 	},
-	// Tag operations parameters
 	{
-		displayName: 'Tag Name or ID',
-		name: 'tagName',
-		type: 'options',
-		displayOptions: {
-			show: {
-				...showOnlyForImmobilie,
-				operation: ['assignTag', 'removeTag'],
-			},
-		},
+		displayName: 'Tag IDs',
+		name: 'tagIds',
+		type: 'multiOptions',
 		typeOptions: {
 			loadOptionsMethod: 'getTags',
 		},
-		default: '',
 		required: true,
-		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
-		routing: {
-			send: {
-				type: 'body',
-				property: 'tag_id',
-			},
-		},
-	},
-	// Get Many parameters
-	{
-		displayName: 'Limit',
-		name: 'limit',
-		type: 'number',
 		displayOptions: {
 			show: {
 				...showOnlyForImmobilie,
-				operation: ['getAll'],
-				returnAll: [false],
+				operation: ['setTags'],
 			},
 		},
-		typeOptions: {
-			minValue: 1,
-			maxValue: 100,
-		},
-		default: 50,
-		routing: {
-			send: {
-				type: 'query',
-				property: 'limit',
-			},
-			output: {
-				maxResults: '={{$value}}',
-			},
-		},
-		description: 'Max number of results to return',
-	},
-	{
-		displayName: 'Return All',
-		name: 'returnAll',
-		type: 'boolean',
-		displayOptions: {
-			show: {
-				...showOnlyForImmobilie,
-				operation: ['getAll'],
-			},
-		},
-		default: false,
-		description: 'Whether to return all results or only up to a given limit',
-		routing: {
-			send: {
-				paginate: '={{ $value }}',
-			},
-			operations: {
-				pagination: {
-					type: 'offset',
-					properties: {
-						limitParameter: 'limit',
-						offsetParameter: 'offset',
-						pageSize: 100,
-						type: 'query',
-					},
-				},
-			},
-		},
+		default: [],
 	},
 ];
