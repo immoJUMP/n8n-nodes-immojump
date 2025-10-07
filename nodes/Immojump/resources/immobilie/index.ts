@@ -13,13 +13,13 @@ const immobilieTypeOptions = [
 ];
 
 const createBodyExpression = `={{ (() => {
-	const body: Record<string, any> = {
+	const body = {
 		type: $parameter.type,
 		name: $parameter.name,
 		organisation_id: $credentials.organisationId,
 	};
 	const additional = $parameter.additionalFields ?? {};
-	const daten: Record<string, any> = {};
+	const daten = {};
 
 	if (additional.adresse) {
 		daten.adresse = additional.adresse;
@@ -40,7 +40,7 @@ const createBodyExpression = `={{ (() => {
 		const raw = additional.datenJson;
 		const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
 		if (parsed && typeof parsed === 'object') {
-			Object.assign(daten, parsed as Record<string, any>);
+			Object.assign(daten, parsed);
 		}
 	}
 
@@ -52,7 +52,7 @@ const createBodyExpression = `={{ (() => {
 })() }}`;
 
 const updateBodyExpression = `={{ (() => {
-	const payload: Record<string, any> = {};
+	const payload = {};
 	const fields = $parameter.updateFields ?? {};
 
 	if (fields.name) {
@@ -62,7 +62,7 @@ const updateBodyExpression = `={{ (() => {
 		payload.type = fields.type;
 	}
 
-	const numericMappings: Array<[keyof typeof fields, string]> = [
+	const numericMappings = [
 		['acquisitionPrice', 'acquisition_price'],
 		['salePrice', 'sale_price'],
 		['askingPrice', 'asking_price'],
@@ -70,7 +70,7 @@ const updateBodyExpression = `={{ (() => {
 	];
 
 	for (const [sourceKey, targetKey] of numericMappings) {
-		const value = (fields as Record<string, unknown>)[sourceKey];
+		const value = fields[sourceKey];
 		if (value !== undefined) {
 			payload[targetKey] = value;
 		}
@@ -80,7 +80,7 @@ const updateBodyExpression = `={{ (() => {
 		payload.preview_image_id = fields.previewImageId || null;
 	}
 
-	const daten: Record<string, any> = {};
+	const daten = {};
 	if (fields.adresse) {
 		daten.adresse = fields.adresse;
 	}
@@ -100,7 +100,7 @@ const updateBodyExpression = `={{ (() => {
 		const raw = fields.datenJson;
 		const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
 		if (parsed && typeof parsed === 'object') {
-			Object.assign(daten, parsed as Record<string, any>);
+			Object.assign(daten, parsed);
 		}
 	}
 
@@ -112,6 +112,28 @@ const updateBodyExpression = `={{ (() => {
 
 	return payload;
 })() }}`;
+
+const createResourceLinkBodyExpression = `={{ (() => {
+	const body = {
+		title: $parameter.linkTitle,
+		url: $parameter.linkUrl,
+	};
+	const optional = $parameter.linkOptionalFields ?? {};
+	if (optional.notes) {
+		body.notes = optional.notes;
+	}
+	if (optional.icon) {
+		body.icon = optional.icon;
+	}
+	if (optional.color) {
+		body.color = optional.color;
+	}
+	if (optional.orderIndex !== undefined && optional.orderIndex !== null) {
+		body.order_index = optional.orderIndex;
+	}
+	return body;
+})() }}`;
+
 
 export const immobilieDescription: INodeProperties[] = [
 	{
@@ -157,6 +179,19 @@ export const immobilieDescription: INodeProperties[] = [
 						method: 'POST',
 						url: '/api/v2/immobilien',
 						body: createBodyExpression,
+					},
+				},
+			},
+			{
+				name: 'Add Resource Link',
+				value: 'addResourceLink',
+				action: 'Add resource link',
+				description: 'Attach an external link to an immobilie',
+				routing: {
+					request: {
+						method: 'POST',
+						url: '=/api/resource-links/immobilie/{{$parameter.immobilieId}}',
+						body: createResourceLinkBodyExpression,
 					},
 				},
 			},
@@ -222,10 +257,81 @@ export const immobilieDescription: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				...showOnlyForImmobilie,
-				operation: ['get', 'update', 'delete', 'updateStatus', 'setTags'],
+				operation: ['get', 'update', 'delete', 'updateStatus', 'setTags', 'addResourceLink'],
 			},
 		},
 		default: '',
+	},
+	{
+		displayName: 'Link Title',
+		name: 'linkTitle',
+		type: 'string',
+		required: true,
+		displayOptions: {
+			show: {
+				...showOnlyForImmobilie,
+				operation: ['addResourceLink'],
+			},
+		},
+		default: '',
+		description: 'Title displayed for the resource link',
+	},
+	{
+		displayName: 'Link URL',
+		name: 'linkUrl',
+		type: 'string',
+		required: true,
+		displayOptions: {
+			show: {
+				...showOnlyForImmobilie,
+				operation: ['addResourceLink'],
+			},
+		},
+		default: '',
+		description: 'Destination URL (http/https)',
+	},
+	{
+		displayName: 'Optional Fields',
+		name: 'linkOptionalFields',
+		type: 'collection',
+		placeholder: 'Add Field',
+		default: {},
+		displayOptions: {
+			show: {
+				...showOnlyForImmobilie,
+				operation: ['addResourceLink'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Color',
+				name: 'color',
+				type: 'color',
+				default: '#6c757d',
+				description: 'Optional color value such as #FFAA00',
+			},
+			{
+				displayName: 'Icon',
+				name: 'icon',
+				type: 'string',
+				default: '',
+				description: 'Optional icon identifier for the link',
+			},
+			{
+				displayName: 'Notes',
+				name: 'notes',
+				type: 'string',
+				default: '',
+				description: 'Optional note describing the resource link',
+			},
+			{
+				displayName: 'Order Index',
+				name: 'orderIndex',
+				type: 'number',
+				default: 0,
+				description: 'Optional position used for ordering links',
+			},
+		],
 	},
 	{
 		displayName: 'Page',
