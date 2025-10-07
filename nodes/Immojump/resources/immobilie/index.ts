@@ -3,12 +3,11 @@ import type { INodeProperties } from 'n8n-workflow';
 const showOnlyForImmobilie = {
 	resource: ['immobilie'],
 };
-3
 const immobilieTypeOptions = [
 	{ name: 'Eigentumswohnung (ETW)', value: 'ETW' },
 	{ name: 'Mehrfamilienhaus (MFH)', value: 'MFH' },
 	{ name: 'Einfamilienhaus (EFH)', value: 'EFH' },
-	{ name: 'Wohn- und Geschäftshaus (WGH)', value: 'WGH' },
+	{ name: 'Wohn- Und Geschäftshaus (WGH)', value: 'WGH' },
 	{ name: 'Gewerbeimmobilie (GEW)', value: 'GEW' },
 	{ name: 'Sonstiges', value: 'Sonstiges' },
 ];
@@ -125,10 +124,10 @@ export const immobilieDescription: INodeProperties[] = [
 		},
 		options: [
 			{
-				name: 'List',
-				value: 'getAll',
-				action: 'List immobilien',
-				description: 'List immobilien for the current organisation',
+					name: 'Get Many',
+					value: 'getAll',
+					action: 'Get immobilien',
+					description: 'Get immobilien for the current organisation',
 				routing: {
 					request: {
 						method: 'GET',
@@ -227,7 +226,6 @@ export const immobilieDescription: INodeProperties[] = [
 			},
 		},
 		default: '',
-		description: 'The immobilie ID',
 	},
 	{
 		displayName: 'Page',
@@ -310,28 +308,22 @@ export const immobilieDescription: INodeProperties[] = [
 				default: '',
 			},
 			{
-				displayName: 'Kaufpreis',
-				name: 'kaufpreis',
-				type: 'number',
-				default: 0,
-			},
-			{
-				displayName: 'Fläche (m²)',
-				name: 'flaeche',
-				type: 'number',
-				default: 0,
-			},
-			{
 				displayName: 'Baujahr',
 				name: 'baujahr',
 				type: 'number',
 				default: 0,
 			},
 			{
-				displayName: 'Zustand',
-				name: 'zustand',
-				type: 'string',
-				default: '',
+				displayName: 'Fläche (M²)',
+				name: 'flaeche',
+				type: 'number',
+				default: 0,
+			},
+			{
+				displayName: 'Kaufpreis',
+				name: 'kaufpreis',
+				type: 'number',
+				default: 0,
 			},
 			{
 				displayName: 'Raw Daten (JSON)',
@@ -339,6 +331,12 @@ export const immobilieDescription: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Optional JSON string merged into the immobilie daten payload',
+			},
+			{
+				displayName: 'Zustand',
+				name: 'zustand',
+				type: 'string',
+				default: '',
 			},
 		],
 	},
@@ -356,29 +354,10 @@ export const immobilieDescription: INodeProperties[] = [
 		},
 		options: [
 			{
-				displayName: 'Name',
-				name: 'name',
+				displayName: 'Adresse',
+				name: 'adresse',
 				type: 'string',
 				default: '',
-			},
-			{
-				displayName: 'Type',
-				name: 'type',
-				type: 'options',
-				options: immobilieTypeOptions,
-				default: 'ETW',
-			},
-			{
-				displayName: 'Ankaufspreis (EUR)',
-				name: 'acquisitionPrice',
-				type: 'number',
-				default: 0,
-			},
-			{
-				displayName: 'Verkaufspreis (EUR)',
-				name: 'salePrice',
-				type: 'number',
-				default: 0,
 			},
 			{
 				displayName: 'Angebotspreis (EUR)',
@@ -387,33 +366,8 @@ export const immobilieDescription: INodeProperties[] = [
 				default: 0,
 			},
 			{
-				displayName: 'Zielverkaufspreis (EUR)',
-				name: 'targetSalePrice',
-				type: 'number',
-				default: 0,
-			},
-			{
-				displayName: 'Preview Image ID',
-				name: 'previewImageId',
-				type: 'string',
-				default: '',
-				description: 'UUID of an uploaded image to use as preview',
-			},
-			{
-				displayName: 'Adresse',
-				name: 'adresse',
-				type: 'string',
-				default: '',
-			},
-			{
-				displayName: 'Kaufpreis',
-				name: 'kaufpreis',
-				type: 'number',
-				default: 0,
-			},
-			{
-				displayName: 'Fläche (m²)',
-				name: 'flaeche',
+				displayName: 'Ankaufspreis (EUR)',
+				name: 'acquisitionPrice',
 				type: 'number',
 				default: 0,
 			},
@@ -424,10 +378,29 @@ export const immobilieDescription: INodeProperties[] = [
 				default: 0,
 			},
 			{
-				displayName: 'Zustand',
-				name: 'zustand',
+					displayName: 'Fläche (M²)',
+				name: 'flaeche',
+				type: 'number',
+				default: 0,
+			},
+			{
+				displayName: 'Kaufpreis',
+				name: 'kaufpreis',
+				type: 'number',
+				default: 0,
+			},
+			{
+				displayName: 'Name',
+				name: 'name',
 				type: 'string',
 				default: '',
+			},
+			{
+				displayName: 'Preview Image ID',
+				name: 'previewImageId',
+				type: 'string',
+				default: '',
+				description: 'UUID of an uploaded image to use as preview',
 			},
 			{
 				displayName: 'Raw Daten (JSON)',
@@ -441,12 +414,37 @@ export const immobilieDescription: INodeProperties[] = [
 				name: 'resetDaten',
 				type: 'boolean',
 				default: false,
-				description: 'Send an empty object to clear existing daten before applying updates',
+				description: 'Whether to reset existing daten before applying updates',
+			},
+			{
+				displayName: 'Type',
+				name: 'type',
+				type: 'options',
+				options: immobilieTypeOptions,
+				default: 'ETW',
+			},
+			{
+				displayName: 'Verkaufspreis (EUR)',
+				name: 'salePrice',
+				type: 'number',
+				default: 0,
+			},
+			{
+				displayName: 'Zielverkaufspreis (EUR)',
+				name: 'targetSalePrice',
+				type: 'number',
+				default: 0,
+			},
+			{
+				displayName: 'Zustand',
+				name: 'zustand',
+				type: 'string',
+				default: '',
 			},
 		],
 	},
 	{
-		displayName: 'Status',
+		displayName: 'Status Name or ID',
 		name: 'statusId',
 		type: 'options',
 		typeOptions: {
@@ -460,9 +458,10 @@ export const immobilieDescription: INodeProperties[] = [
 			},
 		},
 		default: '',
+		description: 'Choose from the list, or specify an ID using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 	},
 	{
-		displayName: 'Tag IDs',
+		displayName: 'Tag Names or IDs',
 		name: 'tagIds',
 		type: 'multiOptions',
 		typeOptions: {
@@ -476,5 +475,6 @@ export const immobilieDescription: INodeProperties[] = [
 			},
 		},
 		default: [],
+		description: 'Choose from the list, or specify IDs using an <a href="https://docs.n8n.io/code/expressions/">expression</a>',
 	},
 ];
