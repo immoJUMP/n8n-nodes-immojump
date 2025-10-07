@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.5.0...v1.6.0) (2025-10-07)
+
+
+### Features
+
+* add links support ([95712a0](https://github.com/immoJUMP/n8n-nodes-immojump/commit/95712a0b4970fadfa4861b5c2a47c9b0d632dc2b))
+
 ## [1.5.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.4.0...v1.5.0) (2025-10-07)
 
 
