@@ -6,6 +6,8 @@ import {
 	type IRequestOptions,
 } from 'n8n-workflow';
 import { immobilieDescription } from './resources/immobilie';
+import { contactDescription } from './resources/contact';
+import { activityDescription } from './resources/activity';
 
 type StatusResponse = {
 	id: string | number;
@@ -97,10 +99,20 @@ export class Immojump implements INodeType {
 						name: 'Immobilie',
 						value: 'immobilie',
 					},
+					{
+						name: 'Contact',
+						value: 'contact',
+					},
+					{
+						name: 'Activity',
+						value: 'activity',
+					},
 				],
 				default: 'immobilie',
 			},
 			...immobilieDescription,
+			...contactDescription,
+			...activityDescription,
 		],
 	};
 
