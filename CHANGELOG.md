@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.6.0...v1.7.0) (2025-10-08)
+
+
+### Features
+
+* add support for contact, activity ([c222f12](https://github.com/immoJUMP/n8n-nodes-immojump/commit/c222f121307100843cf0b6e47e92df0c1d7f7774))
+
 ## [1.6.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.5.0...v1.6.0) (2025-10-07)
 
 
