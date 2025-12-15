@@ -13,7 +13,7 @@ export class ImmojumpApi implements ICredentialType {
   documentationUrl = 'https://github.com/immoJUMP/n8n-nodes-immojump#credentials';
 
   properties: INodeProperties[] = [
-    { displayName: 'Base URL', name: 'baseUrl', type: 'string', default: 'http://localhost:8080', required: true },
+    { displayName: 'Base URL', name: 'baseUrl', type: 'string', default: 'https://immojump.de', required: true },
     { displayName: 'Bearer Token', name: 'token', type: 'string', typeOptions: { password: true }, required: true, default: '' },
     { displayName: 'Organisation ID', name: 'organisationId', type: 'string', default: '', required: true },
   ];
