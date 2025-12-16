@@ -318,6 +318,7 @@ export const contactDescription: INodeProperties[] = [
 				name: 'email',
 				type: 'string',
 				default: '',
+				placeholder: 'name@email.com',
 			},
 			{
 				displayName: 'Mobile',
@@ -369,6 +370,7 @@ export const contactDescription: INodeProperties[] = [
 				name: 'email',
 				type: 'string',
 				default: '',
+				placeholder: 'name@email.com',
 			},
 			{
 				displayName: 'First Name',
