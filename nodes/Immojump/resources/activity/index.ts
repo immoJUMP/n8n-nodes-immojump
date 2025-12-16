@@ -292,8 +292,8 @@ export const activityDescription: INodeProperties[] = [
 		name: 'typeFilter',
 		type: 'options',
 		options: [
-			{ name: 'Any', value: 'all' },
 			{ name: 'Anruf', value: 'ANRUF' },
+			{ name: 'Any', value: 'all' },
 			{ name: 'Besichtigung', value: 'BESICHTIGUNG' },
 			{ name: 'Brief', value: 'BRIEF' },
 			{ name: 'E-Mail', value: 'E-MAIL' },
@@ -315,11 +315,11 @@ export const activityDescription: INodeProperties[] = [
 		name: 'statusFilter',
 		type: 'options',
 		options: [
+			{ name: 'Abgebrochen', value: 'Abgebrochen' },
+			{ name: 'Abgeschlossen', value: 'Abgeschlossen' },
 			{ name: 'Any', value: 'all' },
 			{ name: 'Geplant', value: 'Geplant' },
 			{ name: 'In Bearbeitung', value: 'In Bearbeitung' },
-			{ name: 'Abgeschlossen', value: 'Abgeschlossen' },
-			{ name: 'Abgebrochen', value: 'Abgebrochen' },
 		],
 		displayOptions: {
 			show: {
@@ -338,8 +338,8 @@ export const activityDescription: INodeProperties[] = [
 			{ name: 'Any', value: 'all' },
 			{ name: 'Hoch', value: 'Hoch' },
 			{ name: 'Mittel', value: 'Mittel' },
+			{ name: 'Nicht Gesetzt', value: 'NA' },
 			{ name: 'Niedrig', value: 'Niedrig' },
-			{ name: 'Nicht gesetzt', value: 'NA' },
 		],
 		displayOptions: {
 			show: {
@@ -411,8 +411,8 @@ export const activityDescription: INodeProperties[] = [
 		options: [
 			{ name: 'Hoch', value: 'Hoch' },
 			{ name: 'Mittel', value: 'Mittel' },
+			{ name: 'Nicht Gesetzt', value: 'NA' },
 			{ name: 'Niedrig', value: 'Niedrig' },
-			{ name: 'Nicht gesetzt', value: 'NA' },
 		],
 		required: true,
 		displayOptions: {
@@ -546,8 +546,8 @@ export const activityDescription: INodeProperties[] = [
 				options: [
 					{ name: 'Hoch', value: 'Hoch' },
 					{ name: 'Mittel', value: 'Mittel' },
+					{ name: 'Nicht Gesetzt', value: 'NA' },
 					{ name: 'Niedrig', value: 'Niedrig' },
-					{ name: 'Nicht gesetzt', value: 'NA' },
 				],
 				default: 'NA',
 			},
