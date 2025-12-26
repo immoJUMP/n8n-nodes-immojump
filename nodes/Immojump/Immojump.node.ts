@@ -80,7 +80,7 @@ export class Immojump implements INodeType {
 		outputs: ['main'],
 		credentials: [{ name: 'immojumpApi', required: true }],
 		requestDefaults: {
-			baseURL: '={{$credentials.baseUrl}}',
+			baseURL: '={{ ($credentials.baseUrl || "").replace(/\\/$/, "").replace(/\\/api$/, "") }}',
 			headers: {
 				Accept: 'application/json',
 				'Content-Type': 'application/json',
