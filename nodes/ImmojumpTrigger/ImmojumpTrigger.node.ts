@@ -109,7 +109,7 @@ export class ImmojumpTrigger implements INodeType {
 			name: 'Immojump Trigger',
 		},
 		inputs: [],
-		outputs: ['main'],
+		outputs: [{ type: 'main' as const }],
 		credentials: [{ name: 'immojumpApi', required: true }],
 		webhooks: [
 			{
@@ -156,7 +156,7 @@ export class ImmojumpTrigger implements INodeType {
 				type: 'multiOptions',
 				displayOptions: {
 					show: {
-						events: ['immobilie.status_changed'],
+						'/events': ['immobilie.status_changed'],
 					},
 				},
 				default: [],
@@ -172,7 +172,7 @@ export class ImmojumpTrigger implements INodeType {
 				type: 'multiOptions',
 				displayOptions: {
 					show: {
-						events: ['immobilie.tag_added', 'immobilie.tag_removed'],
+						'/events': ['immobilie.tag_added', 'immobilie.tag_removed'],
 					},
 				},
 				default: [],
@@ -188,7 +188,7 @@ export class ImmojumpTrigger implements INodeType {
 				type: 'multiOptions',
 				displayOptions: {
 					show: {
-						events: ['immobilie.created'],
+						'/events': ['immobilie.created'],
 					},
 				},
 				default: [],
@@ -242,7 +242,7 @@ export class ImmojumpTrigger implements INodeType {
 
 		const payloadData = (bodyData.payload as IDataObject | undefined);
 		const event = (bodyData.event ?? bodyData.type ?? payloadData?.event) as string | undefined;
-		const immobilie = bodyData.immobilie as IDataObject;
+		const immobilie = bodyData.immobilie as IDataObject | undefined;
 
 		// Check if this event should trigger
 		if (!event || !events.includes(event)) {
@@ -272,9 +272,16 @@ export class ImmojumpTrigger implements INodeType {
 		}
 
 		if (event === 'immobilie.created' && propertyTypeFilters.length > 0) {
-			// For immobilie.created, check the type from the main object or payload
-			const propertyType = (immobilie.type || bodyData.object_type) as string;
-			shouldTrigger = propertyTypeFilters.includes(propertyType);
+			// For immobilie.created, check the type from the payload (immobilie_type) or object.type
+			const payload = bodyData.payload as IDataObject | undefined;
+			const objectData = bodyData.object as IDataObject | undefined;
+			const propertyType = (
+				(payload?.immobilie_type as string) ||
+				(immobilie && (immobilie.type as string)) ||
+				(objectData?.type as string) ||
+				''
+			) as string;
+			shouldTrigger = propertyType ? propertyTypeFilters.includes(propertyType) : false;
 		}
 
 		if (!shouldTrigger) {

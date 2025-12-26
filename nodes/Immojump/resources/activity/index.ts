@@ -390,10 +390,10 @@ export const activityDescription: INodeProperties[] = [
 		name: 'status',
 		type: 'options',
 		options: [
-			{ name: 'Geplant', value: 'Geplant' },
-			{ name: 'In Bearbeitung', value: 'In Bearbeitung' },
 			{ name: 'Abgeschlossen', value: 'Abgeschlossen' },
 			{ name: 'Abgebrochen', value: 'Abgebrochen' },
+			{ name: 'Geplant', value: 'Geplant' },
+			{ name: 'In Bearbeitung', value: 'In Bearbeitung' },
 		],
 		required: true,
 		displayOptions: {
@@ -568,10 +568,10 @@ export const activityDescription: INodeProperties[] = [
 				name: 'status',
 				type: 'options',
 				options: [
-					{ name: 'Geplant', value: 'Geplant' },
-					{ name: 'In Bearbeitung', value: 'In Bearbeitung' },
 					{ name: 'Abgeschlossen', value: 'Abgeschlossen' },
 					{ name: 'Abgebrochen', value: 'Abgebrochen' },
+					{ name: 'Geplant', value: 'Geplant' },
+					{ name: 'In Bearbeitung', value: 'In Bearbeitung' },
 				],
 				default: 'Geplant',
 			},

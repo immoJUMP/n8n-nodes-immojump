@@ -49,22 +49,22 @@ const contactUpdateBodyExpression = `={{ (() => {
 	if (fields.lastName) {
 		payload.last_name = fields.lastName;
 	}
-	if (fields.email !== undefined) {
+	if (fields.email !== undefined && fields.email !== '') {
 		payload.email = fields.email;
 	}
-	if (fields.phone !== undefined) {
+	if (fields.phone !== undefined && fields.phone !== '') {
 		payload.phone = fields.phone;
 	}
-	if (fields.mobile !== undefined) {
+	if (fields.mobile !== undefined && fields.mobile !== '') {
 		payload.mobile = fields.mobile;
 	}
-	if (fields.address !== undefined) {
+	if (fields.address !== undefined && fields.address !== '') {
 		payload.address = fields.address;
 	}
-	if (fields.role !== undefined) {
+	if (fields.role !== undefined && fields.role !== '') {
 		payload.role = fields.role;
 	}
-	if (fields.company !== undefined) {
+	if (fields.company !== undefined && fields.company !== '') {
 		payload.company = fields.company;
 	}
 
