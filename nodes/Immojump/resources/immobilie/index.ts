@@ -146,10 +146,10 @@ export const immobilieDescription: INodeProperties[] = [
 		},
 		options: [
 			{
-					name: 'Get Many',
-					value: 'getAll',
-					action: 'Get immobilien',
-					description: 'Get immobilien for the current organisation',
+				name: 'Get Many',
+				value: 'getAll',
+				action: 'Get immobilien',
+				description: 'Get immobilien for the current organisation',
 				routing: {
 					request: {
 						method: 'GET',
@@ -484,7 +484,7 @@ export const immobilieDescription: INodeProperties[] = [
 				default: 0,
 			},
 			{
-					displayName: 'Fläche (M²)',
+				displayName: 'Fläche (M²)',
 				name: 'flaeche',
 				type: 'number',
 				default: 0,
