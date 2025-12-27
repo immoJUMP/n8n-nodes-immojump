@@ -474,29 +474,29 @@ export class ImmojumpTrigger implements INodeType {
 					webhookId,
 				});
 
-					try {
-						const response = await this.helpers.request(requestOptions);
-						const exists =
-							Array.isArray(response) &&
-							response.some(
-								(hook) =>
-									isWebhookSummary(hook) && hook.id !== null && hook.id !== undefined && String(hook.id) === webhookId,
-							);
-						if (!exists) {
-							delete staticData.webhookId;
-						}
-						this.logger.debug('immojumpTrigger.checkExists result', { webhookId, exists });
-						return exists;
-					} catch (error: unknown) {
-						const { message, statusCode, responseBody } = parseErrorDetails(error);
-						this.logger.error('immojumpTrigger.checkExists failed', {
-							message,
-							statusCode,
-							responseBody,
-						});
-						return false;
+				try {
+					const response = await this.helpers.request(requestOptions);
+					const exists =
+						Array.isArray(response) &&
+						response.some(
+							(hook) =>
+								isWebhookSummary(hook) && hook.id !== null && hook.id !== undefined && String(hook.id) === webhookId,
+						);
+					if (!exists) {
+						delete staticData.webhookId;
 					}
-				},
+					this.logger.debug('immojumpTrigger.checkExists result', { webhookId, exists });
+					return exists;
+				} catch (error: unknown) {
+					const { message, statusCode, responseBody } = parseErrorDetails(error);
+					this.logger.error('immojumpTrigger.checkExists failed', {
+						message,
+						statusCode,
+						responseBody,
+					});
+					return false;
+				}
+			},
 
 			async create(this: IHookFunctions): Promise<boolean> {
 				const credentials = await this.getCredentials('immojumpApi');
@@ -537,27 +537,27 @@ export class ImmojumpTrigger implements INodeType {
 					webhookUrl,
 				});
 
-					try {
-						const response = await this.helpers.request(requestOptions);
-						const webhookId = extractId(response);
-						if (webhookId) {
-							const staticData = this.getWorkflowStaticData('node');
-							staticData.webhookId = webhookId;
-							this.logger.debug('immojumpTrigger.create success', { webhookId });
-							return true;
-						}
-						this.logger.warn('immojumpTrigger.create missing webhook id in response');
-					} catch (error: unknown) {
-						const { message, statusCode, responseBody } = parseErrorDetails(error);
-						this.logger.error('immojumpTrigger.create failed', {
-							message,
-							statusCode,
-							responseBody,
-						});
+				try {
+					const response = await this.helpers.request(requestOptions);
+					const webhookId = extractId(response);
+					if (webhookId) {
+						const staticData = this.getWorkflowStaticData('node');
+						staticData.webhookId = webhookId;
+						this.logger.debug('immojumpTrigger.create success', { webhookId });
+						return true;
 					}
+					this.logger.warn('immojumpTrigger.create missing webhook id in response');
+				} catch (error: unknown) {
+					const { message, statusCode, responseBody } = parseErrorDetails(error);
+					this.logger.error('immojumpTrigger.create failed', {
+						message,
+						statusCode,
+						responseBody,
+					});
+				}
 
-					return false;
-				},
+				return false;
+			},
 
 			async delete(this: IHookFunctions): Promise<boolean> {
 				const staticData = this.getWorkflowStaticData('node');
@@ -593,25 +593,25 @@ export class ImmojumpTrigger implements INodeType {
 					webhookId,
 				});
 
-					try {
-						await this.helpers.request(requestOptions);
+				try {
+					await this.helpers.request(requestOptions);
+					delete staticData.webhookId;
+					this.logger.debug('immojumpTrigger.delete success', { webhookId });
+					return true;
+				} catch (error: unknown) {
+					const { message, statusCode, responseBody } = parseErrorDetails(error);
+					if (statusCode === 404) {
 						delete staticData.webhookId;
-						this.logger.debug('immojumpTrigger.delete success', { webhookId });
 						return true;
-					} catch (error: unknown) {
-						const { message, statusCode, responseBody } = parseErrorDetails(error);
-						if (statusCode === 404) {
-							delete staticData.webhookId;
-							return true;
-						}
-						this.logger.error('immojumpTrigger.delete failed', {
-							message,
-							statusCode,
-							responseBody,
-						});
-						return false;
 					}
-				},
+					this.logger.error('immojumpTrigger.delete failed', {
+						message,
+						statusCode,
+						responseBody,
+					});
+					return false;
+				}
 			},
-		};
+		},
+	};
 }
