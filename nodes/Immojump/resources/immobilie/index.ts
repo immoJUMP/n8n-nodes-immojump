@@ -153,7 +153,7 @@ export const immobilieDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'GET',
-						url: '=/api/v2/immobilien?organisation_id={{$credentials.organisationId}}&page={{$parameter.page || 1}}&per_page={{$parameter.perPage || 20}}',
+						url: '=/api/v2/immobilien?organisation_id={{$parameter.organisationId || $credentials.organisationId}}&page={{$parameter.page || 1}}&per_page={{$parameter.perPage || 20}}',
 					},
 				},
 			},
@@ -178,7 +178,13 @@ export const immobilieDescription: INodeProperties[] = [
 					request: {
 						method: 'POST',
 						url: '/api/v2/immobilien',
+						qs: {
+							name: '={{$parameter.name || undefined}}',
+							type: '={{$parameter.type || undefined}}',
+							organisation_id: '={{$credentials.organisationId || undefined}}',
+						},
 						body: createBodyExpression,
+						json: true,
 					},
 				},
 			},
@@ -348,6 +354,20 @@ export const immobilieDescription: INodeProperties[] = [
 			},
 		},
 		description: 'Page number (>= 1)',
+	},
+	{
+		displayName: 'Organisation ID',
+		name: 'organisationId',
+		type: 'string',
+		displayOptions: {
+			show: {
+				...showOnlyForImmobilie,
+				operation: ['getAll'],
+			},
+		},
+		default: '',
+		description:
+			'Organisation scope for listing immobilien. Defaults to the Organisation ID from the credentials when left empty.',
 	},
 	{
 		displayName: 'Per Page',
