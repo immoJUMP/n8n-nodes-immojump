@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.7.1](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.7.0...v1.7.1) (2025-12-29)
+
+
+### Bug Fixes
+
+* **ImmoJumpApiCredentials.ts:** Changed the Base URL ([811ff1d](https://github.com/immoJUMP/n8n-nodes-immojump/commit/811ff1d3ec9a51b7c5e030b0c30250886ab30810))
+* **n8n-nodes-immojump:** fixed some events ([0885bd3](https://github.com/immoJUMP/n8n-nodes-immojump/commit/0885bd300dbc08b79c7ba8a7c8e62a7f0ebdb99b))
+* **n8n-nodes-immojump:** Fixed the Linting Errors ([214ead5](https://github.com/immoJUMP/n8n-nodes-immojump/commit/214ead5ba058bd3a89052922349bc8ef40ff4441))
+* **n8n-nodes-immojump:** smaller bugs ([5832fef](https://github.com/immoJUMP/n8n-nodes-immojump/commit/5832feff2f62b1bc7b6c14e0d1465a91de951c98))
+* **n8n-nodes-immojump:** smaller bugs ([281622a](https://github.com/immoJUMP/n8n-nodes-immojump/commit/281622a5b8a7f9ee0efebb5804a6aaa6ce2995f2))
+
 ## [1.7.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.6.0...v1.7.0) (2025-10-08)
 
 
