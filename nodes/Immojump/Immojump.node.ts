@@ -87,6 +87,7 @@ export class Immojump implements INodeType {
 				Authorization: '={{"Bearer " + $credentials.token}}',
 				'X-Organisation-Id': '={{$credentials.organisationId}}',
 			},
+			json: true,
 		},
 		properties: [
 			{

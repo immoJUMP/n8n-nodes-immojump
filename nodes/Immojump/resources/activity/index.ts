@@ -154,11 +154,14 @@ export const activityDescription: INodeProperties[] = [
 				name: 'Get',
 				value: 'get',
 				action: 'Get activity',
-				description: 'Retrieve a single activity by ID',
+				description: 'Retrieve a single activity by Immobilie and title',
 				routing: {
 					request: {
 						method: 'GET',
-						url: '=/api/activities/activities/{{$parameter.activityId}}',
+						url: '=/api/activities/activities/immobilie/{{$parameter.immobilienIdGet}}/by-title',
+						qs: {
+							title: '={{$parameter.activityTitle}}',
+						},
 					},
 				},
 			},
@@ -179,11 +182,14 @@ export const activityDescription: INodeProperties[] = [
 				name: 'Update',
 				value: 'update',
 				action: 'Update activity',
-				description: 'Update an existing activity',
+				description: 'Update an existing activity by Immobilie and title',
 				routing: {
 					request: {
 						method: 'PUT',
-						url: '=/api/activities/activities/{{$parameter.activityId}}',
+						url: '=/api/activities/activities/immobilie/{{$parameter.immobilienIdUpdate}}/by-title',
+						qs: {
+							title: '={{$parameter.activityTitleUpdate}}',
+						},
 						body: activityUpdateBodyExpression,
 					},
 				},
@@ -192,11 +198,14 @@ export const activityDescription: INodeProperties[] = [
 				name: 'Delete',
 				value: 'delete',
 				action: 'Delete activity',
-				description: 'Delete an activity by ID',
+				description: 'Delete an activity by Immobilie and title',
 				routing: {
 					request: {
 						method: 'DELETE',
-						url: '=/api/activities/activities/{{$parameter.activityId}}',
+						url: '=/api/activities/activities/immobilie/{{$parameter.immobilienIdDelete}}/by-title',
+						qs: {
+							title: '={{$parameter.activityTitleDelete}}',
+						},
 					},
 				},
 			},
@@ -204,17 +213,18 @@ export const activityDescription: INodeProperties[] = [
 		default: 'getAll',
 	},
 	{
-		displayName: 'Activity ID',
-		name: 'activityId',
+		displayName: 'Activity Title',
+		name: 'activityTitle',
 		type: 'string',
 		required: true,
 		displayOptions: {
 			show: {
 				...showOnlyForActivity,
-				operation: ['get', 'update', 'delete'],
+				operation: ['get'],
 			},
 		},
 		default: '',
+		description: 'Exact activity title to look up (must be unique within the Immobilie)',
 	},
 	{
 		displayName: 'Organisation ID',
@@ -241,7 +251,77 @@ export const activityDescription: INodeProperties[] = [
 			},
 		},
 		default: '',
-		description: 'ID of the immobilie to filter by or associate with the activity',
+		description: 'ID of the Immobilie to filter by or associate with the activity',
+	},
+	{
+		displayName: 'Immobilien ID',
+		name: 'immobilienIdUpdate',
+		type: 'string',
+		required: true,
+		displayOptions: {
+			show: {
+				...showOnlyForActivity,
+				operation: ['update'],
+			},
+		},
+		default: '',
+		description: 'ID of the Immobilie whose activity should be updated',
+	},
+	{
+		displayName: 'Immobilien ID',
+		name: 'immobilienIdDelete',
+		type: 'string',
+		required: true,
+		displayOptions: {
+			show: {
+				...showOnlyForActivity,
+				operation: ['delete'],
+			},
+		},
+		default: '',
+		description: 'ID of the Immobilie whose activity should be deleted',
+	},
+	{
+		displayName: 'Activity Title',
+		name: 'activityTitleUpdate',
+		type: 'string',
+		required: true,
+		displayOptions: {
+			show: {
+				...showOnlyForActivity,
+				operation: ['update'],
+			},
+		},
+		default: '',
+		description: 'Exact activity title to update (must be unique within the Immobilie)',
+	},
+	{
+		displayName: 'Activity Title',
+		name: 'activityTitleDelete',
+		type: 'string',
+		required: true,
+		displayOptions: {
+			show: {
+				...showOnlyForActivity,
+				operation: ['delete'],
+			},
+		},
+		default: '',
+		description: 'Exact activity title to delete (must be unique within the Immobilie)',
+	},
+	{
+		displayName: 'Immobilien ID',
+		name: 'immobilienIdGet',
+		type: 'string',
+		required: true,
+		displayOptions: {
+			show: {
+				...showOnlyForActivity,
+				operation: ['get'],
+			},
+		},
+		default: '',
+		description: 'ID of the Immobilie whose activity title should be looked up',
 	},
 	{
 		displayName: 'Page',
