@@ -28,7 +28,7 @@ const createBodyExpression = `={{ (() => {
 		daten.kaufpreis = additional.kaufpreis;
 	}
 	if (additional.flaeche !== undefined) {
-		daten.flaeche = additional.flaeche;
+		daten.wohnflaeche = additional.flaeche;
 	}
 	if (additional.baujahr !== undefined) {
 		daten.baujahr = additional.baujahr;
@@ -88,7 +88,7 @@ const updateBodyExpression = `={{ (() => {
 		daten.kaufpreis = fields.kaufpreis;
 	}
 	if (fields.flaeche !== undefined) {
-		daten.flaeche = fields.flaeche;
+		daten.wohnflaeche = fields.flaeche;
 	}
 	if (fields.baujahr !== undefined) {
 		daten.baujahr = fields.baujahr;
@@ -211,6 +211,7 @@ export const immobilieDescription: INodeProperties[] = [
 						method: 'PATCH',
 						url: '=/api/v2/immobilien/{{$parameter.immobilieId}}',
 						body: updateBodyExpression,
+						json: true,
 					},
 				},
 			},
@@ -440,7 +441,7 @@ export const immobilieDescription: INodeProperties[] = [
 				default: 0,
 			},
 			{
-				displayName: 'Fläche (M²)',
+				displayName: 'Wohnfläche (M²)',
 				name: 'flaeche',
 				type: 'number',
 				default: 0,
@@ -504,7 +505,7 @@ export const immobilieDescription: INodeProperties[] = [
 				default: 0,
 			},
 			{
-				displayName: 'Fläche (M²)',
+				displayName: 'Wohnfläche (M²)',
 				name: 'flaeche',
 				type: 'number',
 				default: 0,
