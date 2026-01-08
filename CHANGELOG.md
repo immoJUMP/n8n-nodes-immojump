@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.2](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.7.1...v1.7.2) (2026-01-08)
+
+
+### Bug Fixes
+
+* **n8n-nodes-immojumo:** fixed the update property event ([6707f8a](https://github.com/immoJUMP/n8n-nodes-immojump/commit/6707f8aa6cb38e737d088ea08f1a64b8e29c5062))
+
 ## [1.7.1](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.7.0...v1.7.1) (2025-12-29)
 
 
