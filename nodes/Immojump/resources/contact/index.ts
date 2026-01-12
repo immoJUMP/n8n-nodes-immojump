@@ -4,41 +4,6 @@ const showOnlyForContact = {
 	resource: ['contact'],
 };
 
-const contactCreateBodyExpression = `={{ (() => {
-	const body = {
-		first_name: $parameter.firstName,
-		last_name: $parameter.lastName,
-	};
-
-	const organisationId = $parameter.organisationId || $credentials.organisationId;
-	if (organisationId) {
-		body.organisation_id = organisationId;
-	}
-
-	const additional = $parameter.additionalFields ?? {};
-
-	if (additional.email) {
-		body.email = additional.email;
-	}
-	if (additional.phone) {
-		body.phone = additional.phone;
-	}
-	if (additional.mobile) {
-		body.mobile = additional.mobile;
-	}
-	if (additional.address) {
-		body.address = additional.address;
-	}
-	if (additional.role) {
-		body.role = additional.role;
-	}
-	if (additional.company) {
-		body.company = additional.company;
-	}
-
-	return body;
-})() }}`;
-
 const contactUpdateBodyExpression = `={{ (() => {
 	const payload = {};
 	const fields = $parameter.updateFields ?? {};
@@ -91,8 +56,7 @@ export const contactDescription: INodeProperties[] = [
 						method: 'GET',
 						url: '/api/contacts',
 						qs: {
-							organisation_id:
-								'={{$parameter.organisationId || $credentials.organisationId || undefined}}',
+							organisation_id: '={{$credentials.organisationId || undefined}}',
 							page: '={{$parameter.page || 1}}',
 							per_page: '={{$parameter.perPage || 50}}',
 							q: '={{$parameter.search || undefined}}',
@@ -123,7 +87,18 @@ export const contactDescription: INodeProperties[] = [
 					request: {
 						method: 'POST',
 						url: '/api/contacts',
-						body: contactCreateBodyExpression,
+						body: {
+							first_name: '={{$parameter.firstName}}',
+							last_name: '={{$parameter.lastName}}',
+							organisation_id: '={{$credentials.organisationId}}',
+							email: '={{$parameter.additionalFields?.email || undefined}}',
+							phone: '={{$parameter.additionalFields?.phone || undefined}}',
+							mobile: '={{$parameter.additionalFields?.mobile || undefined}}',
+							address: '={{$parameter.additionalFields?.address || undefined}}',
+							role: '={{$parameter.additionalFields?.role || undefined}}',
+							company: '={{$parameter.additionalFields?.company || undefined}}',
+						},
+						json: true,
 					},
 				},
 			},
@@ -137,6 +112,7 @@ export const contactDescription: INodeProperties[] = [
 						method: 'PUT',
 						url: '=/api/contacts/{{$parameter.contactId}}',
 						body: contactUpdateBodyExpression,
+						json: true,
 					},
 				},
 			},
@@ -167,20 +143,6 @@ export const contactDescription: INodeProperties[] = [
 			},
 		},
 		default: '',
-	},
-	{
-		displayName: 'Organisation ID',
-		name: 'organisationId',
-		type: 'string',
-		displayOptions: {
-			show: {
-				...showOnlyForContact,
-				operation: ['getAll', 'create'],
-			},
-		},
-		default: '',
-		description:
-			'Overrides the credential organisation for the request. Defaults to the organisation from the credentials.',
 	},
 	{
 		displayName: 'Page',
