@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.3](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.7.2...v1.7.3) (2026-01-13)
+
+
+### Bug Fixes
+
+* **n8n-nodes-immojumo:** fixed that for the creation of a contact the System takes the information by the Credential ([42b033c](https://github.com/immoJUMP/n8n-nodes-immojump/commit/42b033c6e094bc6f69f76b660c797cdc57c07d68))
+
 ## [1.7.2](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.7.1...v1.7.2) (2026-01-08)
 
 
