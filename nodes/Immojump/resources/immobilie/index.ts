@@ -441,12 +441,6 @@ export const immobilieDescription: INodeProperties[] = [
 				default: 0,
 			},
 			{
-				displayName: 'Wohnfläche (M²)',
-				name: 'flaeche',
-				type: 'number',
-				default: 0,
-			},
-			{
 				displayName: 'Kaufpreis',
 				name: 'kaufpreis',
 				type: 'number',
@@ -458,6 +452,12 @@ export const immobilieDescription: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description: 'Optional JSON string merged into the immobilie daten payload',
+			},
+			{
+				displayName: 'Wohnfläche (M²)',
+				name: 'flaeche',
+				type: 'number',
+				default: 0,
 			},
 			{
 				displayName: 'Zustand',
@@ -505,12 +505,6 @@ export const immobilieDescription: INodeProperties[] = [
 				default: 0,
 			},
 			{
-				displayName: 'Wohnfläche (M²)',
-				name: 'flaeche',
-				type: 'number',
-				default: 0,
-			},
-			{
 				displayName: 'Kaufpreis',
 				name: 'kaufpreis',
 				type: 'number',
@@ -553,6 +547,12 @@ export const immobilieDescription: INodeProperties[] = [
 			{
 				displayName: 'Verkaufspreis (EUR)',
 				name: 'salePrice',
+				type: 'number',
+				default: 0,
+			},
+			{
+				displayName: 'Wohnfläche (M²)',
+				name: 'flaeche',
 				type: 'number',
 				default: 0,
 			},
