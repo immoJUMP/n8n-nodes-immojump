@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.8.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.7.3...v1.8.0) (2026-02-09)
+
+
+### Features
+
+* **contact:** enhance contact creation and update expressions for improved value resolution ([aa117f6](https://github.com/immoJUMP/n8n-nodes-immojump/commit/aa117f6327b8b6d706e74b6408cb2a100bce3df7))
+
+
+### Bug Fixes
+
+* **alphabetic_linting_error:** now the linting test should succed cause of correct sorted points ([9ca2798](https://github.com/immoJUMP/n8n-nodes-immojump/commit/9ca2798579d41e46b6773ae9133c802c48be95f2))
+
 ## [1.7.3](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.7.2...v1.7.3) (2026-01-13)
 
 
