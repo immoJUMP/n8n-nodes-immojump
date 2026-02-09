@@ -4,33 +4,119 @@ const showOnlyForContact = {
 	resource: ['contact'],
 };
 
+const resolveExpressionValueSnippet = `
+	const resolveValue = (value) => {
+		if (value === undefined || value === null) {
+			return undefined;
+		}
+		if (typeof value !== 'string') {
+			return value;
+		}
+		const trimmed = value.trim();
+		if (trimmed === '') {
+			return undefined;
+		}
+		if (trimmed.startsWith('={{') || trimmed.startsWith('{{')) {
+			try {
+				return $evaluateExpression(trimmed);
+			} catch (error) {
+				return trimmed;
+			}
+		}
+		return trimmed;
+	};
+
+	const resolveStringValue = (value) => {
+		const resolved = resolveValue(value);
+		if (resolved === undefined || resolved === null) {
+			return undefined;
+		}
+		const stringValue = String(resolved).trim();
+		return stringValue === '' ? undefined : stringValue;
+	};
+
+	const resolveEmailValue = (value) => {
+		const resolved = resolveStringValue(value);
+		if (!resolved) {
+			return undefined;
+		}
+		return resolved.replace(/^=/, '');
+	};
+`;
+
+const contactCreateBodyExpression = `={{ (() => {
+${resolveExpressionValueSnippet}
+	const payload = {
+		first_name: $parameter.firstName,
+		last_name: $parameter.lastName,
+		organisation_id: $credentials.organisationId,
+	};
+	const fields = $parameter.additionalFields ?? {};
+
+	const email = resolveEmailValue(fields.email);
+	if (email !== undefined) {
+		payload.email = email;
+	}
+	const phone = resolveStringValue(fields.phone);
+	if (phone !== undefined) {
+		payload.phone = phone;
+	}
+	const mobile = resolveStringValue(fields.mobile);
+	if (mobile !== undefined) {
+		payload.mobile = mobile;
+	}
+	const address = resolveStringValue(fields.address);
+	if (address !== undefined) {
+		payload.address = address;
+	}
+	const role = resolveStringValue(fields.role);
+	if (role !== undefined) {
+		payload.role = role;
+	}
+	const company = resolveStringValue(fields.company);
+	if (company !== undefined) {
+		payload.company = company;
+	}
+
+	return payload;
+})() }}`;
+
 const contactUpdateBodyExpression = `={{ (() => {
+${resolveExpressionValueSnippet}
 	const payload = {};
 	const fields = $parameter.updateFields ?? {};
 
-	if (fields.firstName) {
-		payload.first_name = fields.firstName;
+	const firstName = resolveStringValue(fields.firstName);
+	if (firstName !== undefined) {
+		payload.first_name = firstName;
 	}
-	if (fields.lastName) {
-		payload.last_name = fields.lastName;
+	const lastName = resolveStringValue(fields.lastName);
+	if (lastName !== undefined) {
+		payload.last_name = lastName;
 	}
-	if (fields.email !== undefined && fields.email !== '') {
-		payload.email = fields.email;
+	const email = resolveEmailValue(fields.email);
+	if (email !== undefined) {
+		payload.email = email;
 	}
-	if (fields.phone !== undefined && fields.phone !== '') {
-		payload.phone = fields.phone;
+	const phone = resolveStringValue(fields.phone);
+	if (phone !== undefined) {
+		payload.phone = phone;
 	}
-	if (fields.mobile !== undefined && fields.mobile !== '') {
-		payload.mobile = fields.mobile;
+	const mobile = resolveStringValue(fields.mobile);
+	if (mobile !== undefined) {
+		payload.mobile = mobile;
 	}
-	if (fields.address !== undefined && fields.address !== '') {
-		payload.address = fields.address;
+	const address = resolveStringValue(fields.address);
+	if (address !== undefined) {
+		payload.address = address;
 	}
-	if (fields.role !== undefined && fields.role !== '') {
-		payload.role = fields.role;
+	const role = resolveStringValue(fields.role);
+	if (role !== undefined) {
+		payload.role = role;
 	}
-	if (fields.company !== undefined && fields.company !== '') {
-		payload.company = fields.company;
+	const company = resolveStringValue(fields.company);
+	if (company !== undefined) {
+		payload.company = company;
 	}
 
 	return payload;
@@ -87,17 +173,7 @@ export const contactDescription: INodeProperties[] = [
 					request: {
 						method: 'POST',
 						url: '/api/contacts',
-						body: {
-							first_name: '={{$parameter.firstName}}',
-							last_name: '={{$parameter.lastName}}',
-							organisation_id: '={{$credentials.organisationId}}',
-							email: '={{$parameter.additionalFields?.email || undefined}}',
-							phone: '={{$parameter.additionalFields?.phone || undefined}}',
-							mobile: '={{$parameter.additionalFields?.mobile || undefined}}',
-							address: '={{$parameter.additionalFields?.address || undefined}}',
-							role: '={{$parameter.additionalFields?.role || undefined}}',
-							company: '={{$parameter.additionalFields?.company || undefined}}',
-						},
+						body: contactCreateBodyExpression,
 						json: true,
 					},
 				},
