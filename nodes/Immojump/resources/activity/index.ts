@@ -19,7 +19,7 @@ export const buildActivityCreateBody = (
 			}
 			try {
 				return JSON.parse(trimmed);
-			} catch (error) {
+			} catch {
 				throw new Error(`${fieldName} must be valid JSON`);
 			}
 		}
@@ -79,7 +79,7 @@ export const buildActivityCreateBody = (
 		if (typeof rawContactIds === 'string') {
 			try {
 				parsedContactIds = JSON.parse(rawContactIds);
-			} catch (error) {
+			} catch {
 				throw new Error('contactIds must be valid JSON (e.g. ["uuid1","uuid2"])');
 			}
 		}
@@ -105,7 +105,7 @@ export const buildActivityUpdateBody = (parameter: Record<string, unknown>) => {
 			}
 			try {
 				return JSON.parse(trimmed);
-			} catch (error) {
+			} catch {
 				throw new Error(`${fieldName} must be valid JSON`);
 			}
 		}
@@ -165,7 +165,7 @@ export const buildActivityUpdateBody = (parameter: Record<string, unknown>) => {
 		if (typeof merged.contactIds === 'string') {
 			try {
 				parsedContactIds = JSON.parse(merged.contactIds);
-			} catch (error) {
+			} catch {
 				throw new Error('contactIds must be valid JSON (e.g. ["uuid1","uuid2"])');
 			}
 		}

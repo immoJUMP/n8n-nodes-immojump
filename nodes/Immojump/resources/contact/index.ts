@@ -31,7 +31,7 @@ export const buildContactCreateBody = (
 			}
 			try {
 				return JSON.parse(trimmed);
-			} catch (error) {
+			} catch {
 				throw new Error(`${fieldName} must be valid JSON`);
 			}
 		}
@@ -104,7 +104,7 @@ export const buildContactUpdateBody = (parameter: Record<string, unknown>) => {
 			}
 			try {
 				return JSON.parse(trimmed);
-			} catch (error) {
+			} catch {
 				throw new Error(`${fieldName} must be valid JSON`);
 			}
 		}
