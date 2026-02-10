@@ -4,37 +4,6 @@ const showOnlyForContact = {
 	resource: ['contact'],
 };
 
-const contactCreateBodyExpression = `={{ (() => {
-	const body = {
-		first_name: $parameter.firstName,
-		last_name: $parameter.lastName,
-		organisation_id: $credentials.organisationId,
-	};
-
-	const additional = $parameter.additionalFields ?? {};
-	const email = $parameter.email ?? additional.email;
-	if (email !== undefined && email !== '') {
-		body.email = String(email).replace(/^=/, '').trim();
-	}
-	if (additional.phone !== undefined && additional.phone !== '') {
-		body.phone = additional.phone;
-	}
-	if (additional.mobile !== undefined && additional.mobile !== '') {
-		body.mobile = additional.mobile;
-	}
-	if (additional.address !== undefined && additional.address !== '') {
-		body.address = additional.address;
-	}
-	if (additional.role !== undefined && additional.role !== '') {
-		body.role = additional.role;
-	}
-	if (additional.company !== undefined && additional.company !== '') {
-		body.company = additional.company;
-	}
-
-	return body;
-})() }}`;
-
 const contactUpdateBodyExpression = `={{ (() => {
 	const payload = {};
 	const fields = $parameter.updateFields ?? {};
@@ -45,7 +14,7 @@ const contactUpdateBodyExpression = `={{ (() => {
 	if (fields.lastName !== undefined && fields.lastName !== '') {
 		payload.last_name = fields.lastName;
 	}
-	const email = $parameter.email ?? fields.email;
+	const email = $parameter.email !== undefined && $parameter.email !== '' ? $parameter.email : fields.email;
 	if (email !== undefined && email !== '') {
 		payload.email = String(email).replace(/^=/, '').trim();
 	}
@@ -119,7 +88,18 @@ export const contactDescription: INodeProperties[] = [
 					request: {
 						method: 'POST',
 						url: '/api/contacts',
-						body: contactCreateBodyExpression,
+						body: {
+							first_name: '={{$parameter.firstName}}',
+							last_name: '={{$parameter.lastName}}',
+							organisation_id: '={{$credentials.organisationId}}',
+							email:
+								'={{ (() => { const email = ($parameter.email !== undefined && $parameter.email !== "") ? $parameter.email : $parameter.additionalFields?.email; if (email === undefined || email === "") return undefined; return String(email).replace(/^=/, "").trim(); })() }}',
+							phone: '={{$parameter.additionalFields?.phone || undefined}}',
+							mobile: '={{$parameter.additionalFields?.mobile || undefined}}',
+							address: '={{$parameter.additionalFields?.address || undefined}}',
+							role: '={{$parameter.additionalFields?.role || undefined}}',
+							company: '={{$parameter.additionalFields?.company || undefined}}',
+						},
 						json: true,
 					},
 				},
