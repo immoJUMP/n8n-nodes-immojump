@@ -53,6 +53,9 @@ jobs:
       - name: Run linting
         run: npm run lint
 
+      - name: Run tests
+        run: npm test
+
       - name: Build package
         run: npm run build
 
@@ -96,6 +99,9 @@ jobs:
       - name: Run linting
         run: npm run lint
 
+      - name: Run tests
+        run: npm test
+
       - name: Build package
         run: npm run build
 
@@ -105,4 +111,3 @@ jobs:
           test -f dist/nodes/Immojump/Immojump.node.js || (echo "❌ Missing main node file" && exit 1)
           test -f dist/credentials/ImmojumpApi.credentials.js || (echo "❌ Missing credentials file" && exit 1)
           echo "✅ Package structure verified"
-
