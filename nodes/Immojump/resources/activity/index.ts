@@ -14,8 +14,12 @@ const activityCreateBodyExpression = `={{ (() => {
 
 	const optional = $parameter.additionalFields ?? {};
 
-	if (optional.description) {
-		body.description = optional.description;
+	const description =
+		$parameter.descriptionExpression !== undefined && $parameter.descriptionExpression !== ''
+			? $parameter.descriptionExpression
+			: optional.description;
+	if (description !== undefined && description !== '') {
+		body.description = description;
 	}
 	if (optional.scheduledStart) {
 		body.scheduled_start = optional.scheduledStart;
@@ -77,8 +81,12 @@ const activityUpdateBodyExpression = `={{ (() => {
 	if (fields.priority !== undefined) {
 		payload.priority = fields.priority;
 	}
-	if (fields.description !== undefined) {
-		payload.description = fields.description;
+	const description =
+		$parameter.descriptionExpression !== undefined && $parameter.descriptionExpression !== ''
+			? $parameter.descriptionExpression
+			: fields.description;
+	if (description !== undefined && description !== '') {
+		payload.description = description;
 	}
 	if (fields.scheduledStart !== undefined) {
 		payload.scheduled_start = fields.scheduledStart;
@@ -502,6 +510,23 @@ export const activityDescription: INodeProperties[] = [
 			},
 		},
 		default: 'NA',
+	},
+	{
+		displayName: 'Description (Expression)',
+		name: 'descriptionExpression',
+		type: 'string',
+		typeOptions: {
+			rows: 3,
+		},
+		default: '',
+		description:
+			'Use this field when you need expressions. It overrides Additional Fields / Update Fields Description.',
+		displayOptions: {
+			show: {
+				...showOnlyForActivity,
+				operation: ['create', 'update'],
+			},
+		},
 	},
 	{
 		displayName: 'Additional Fields',
