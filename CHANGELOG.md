@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.10.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.9.0...v1.10.0) (2026-02-10)
+
+
+### Features
+
+* **contact:** refactor contact creation body expression for improved readability and maintainability ([9eccd34](https://github.com/immoJUMP/n8n-nodes-immojump/commit/9eccd3407d17f2db4ed92aa5fb1d4c4b2bfd3f68))
+
 ## [1.9.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.8.0...v1.9.0) (2026-02-10)
 
 
