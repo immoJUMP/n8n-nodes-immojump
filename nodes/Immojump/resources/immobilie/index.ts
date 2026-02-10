@@ -1,5 +1,7 @@
 import type { INodeProperties } from 'n8n-workflow';
 
+declare const $evaluateExpression: (expression: string, itemIndex?: number) => unknown;
+
 const showOnlyForImmobilie = {
 	resource: ['immobilie'],
 };
@@ -16,12 +18,30 @@ export const buildImmobilieCreateBody = (
 	parameter: Record<string, unknown>,
 	credentials: Record<string, unknown>,
 ) => {
+	const resolveExpressionValue = (value: unknown): unknown => {
+		if (typeof value !== 'string') {
+			return value;
+		}
+		const trimmed = value.trim();
+		if (trimmed === '') {
+			return value;
+		}
+		const hasExpression =
+			trimmed.startsWith('=') || (trimmed.includes('{{') && trimmed.includes('}}'));
+		if (!hasExpression || typeof $evaluateExpression !== 'function') {
+			return value;
+		}
+		const expression = trimmed.startsWith('=') ? trimmed.slice(1) : trimmed;
+		return $evaluateExpression(expression);
+	};
+
 	const parseObject = (value: unknown, fieldName: string) => {
-		if (value === undefined || value === null || value === '') {
+		const resolved = resolveExpressionValue(value);
+		if (resolved === undefined || resolved === null || resolved === '') {
 			return undefined;
 		}
-		if (typeof value === 'string') {
-			const trimmed = value.trim();
+		if (typeof resolved === 'string') {
+			const trimmed = resolved.trim();
 			if (trimmed === '') {
 				return undefined;
 			}
@@ -31,15 +51,15 @@ export const buildImmobilieCreateBody = (
 				throw new Error(`${fieldName} must be valid JSON`);
 			}
 		}
-		if (typeof value === 'object') {
-			return value;
+		if (typeof resolved === 'object') {
+			return resolved;
 		}
 		throw new Error(`${fieldName} must be an object or JSON string`);
 	};
 
 	const body: Record<string, unknown> = {
-		type: parameter.type,
-		name: parameter.name,
+		type: resolveExpressionValue(parameter.type),
+		name: resolveExpressionValue(parameter.name),
 		organisation_id: credentials.organisationId,
 	};
 	const additional = (parameter.additionalFields as Record<string, unknown>) ?? {};
@@ -50,22 +70,22 @@ export const buildImmobilieCreateBody = (
 	const daten: Record<string, unknown> = {};
 
 	if (merged.adresse) {
-		daten.adresse = merged.adresse;
+		daten.adresse = resolveExpressionValue(merged.adresse);
 	}
 	if (merged.kaufpreis !== undefined) {
-		daten.kaufpreis = merged.kaufpreis;
+		daten.kaufpreis = resolveExpressionValue(merged.kaufpreis);
 	}
 	if (merged.flaeche !== undefined) {
-		daten.wohnflaeche = merged.flaeche;
+		daten.wohnflaeche = resolveExpressionValue(merged.flaeche);
 	}
 	if (merged.baujahr !== undefined) {
-		daten.baujahr = merged.baujahr;
+		daten.baujahr = resolveExpressionValue(merged.baujahr);
 	}
 	if (merged.zustand) {
-		daten.zustand = merged.zustand;
+		daten.zustand = resolveExpressionValue(merged.zustand);
 	}
 	if (merged.datenJson) {
-		const raw = merged.datenJson;
+		const raw = resolveExpressionValue(merged.datenJson);
 		const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
 		if (parsed && typeof parsed === 'object') {
 			Object.assign(daten, parsed);
@@ -80,12 +100,30 @@ export const buildImmobilieCreateBody = (
 };
 
 export const buildImmobilieUpdateBody = (parameter: Record<string, unknown>) => {
+	const resolveExpressionValue = (value: unknown): unknown => {
+		if (typeof value !== 'string') {
+			return value;
+		}
+		const trimmed = value.trim();
+		if (trimmed === '') {
+			return value;
+		}
+		const hasExpression =
+			trimmed.startsWith('=') || (trimmed.includes('{{') && trimmed.includes('}}'));
+		if (!hasExpression || typeof $evaluateExpression !== 'function') {
+			return value;
+		}
+		const expression = trimmed.startsWith('=') ? trimmed.slice(1) : trimmed;
+		return $evaluateExpression(expression);
+	};
+
 	const parseObject = (value: unknown, fieldName: string) => {
-		if (value === undefined || value === null || value === '') {
+		const resolved = resolveExpressionValue(value);
+		if (resolved === undefined || resolved === null || resolved === '') {
 			return undefined;
 		}
-		if (typeof value === 'string') {
-			const trimmed = value.trim();
+		if (typeof resolved === 'string') {
+			const trimmed = resolved.trim();
 			if (trimmed === '') {
 				return undefined;
 			}
@@ -95,8 +133,8 @@ export const buildImmobilieUpdateBody = (parameter: Record<string, unknown>) => 
 				throw new Error(`${fieldName} must be valid JSON`);
 			}
 		}
-		if (typeof value === 'object') {
-			return value;
+		if (typeof resolved === 'object') {
+			return resolved;
 		}
 		throw new Error(`${fieldName} must be an object or JSON string`);
 	};
@@ -109,10 +147,10 @@ export const buildImmobilieUpdateBody = (parameter: Record<string, unknown>) => 
 	const merged = overrides ? { ...fields, ...overrides } : fields;
 
 	if (merged.name) {
-		payload.name = merged.name;
+		payload.name = resolveExpressionValue(merged.name);
 	}
 	if (merged.type) {
-		payload.type = merged.type;
+		payload.type = resolveExpressionValue(merged.type);
 	}
 
 	const numericMappings: Array<[string, string]> = [
@@ -125,32 +163,33 @@ export const buildImmobilieUpdateBody = (parameter: Record<string, unknown>) => 
 	for (const [sourceKey, targetKey] of numericMappings) {
 		const value = merged[sourceKey];
 		if (value !== undefined) {
-			payload[targetKey] = value;
+			payload[targetKey] = resolveExpressionValue(value);
 		}
 	}
 
 	if (merged.previewImageId !== undefined) {
-		payload.preview_image_id = merged.previewImageId || null;
+		const previewImageId = resolveExpressionValue(merged.previewImageId);
+		payload.preview_image_id = previewImageId || null;
 	}
 
 	const daten: Record<string, unknown> = {};
 	if (merged.adresse) {
-		daten.adresse = merged.adresse;
+		daten.adresse = resolveExpressionValue(merged.adresse);
 	}
 	if (merged.kaufpreis !== undefined) {
-		daten.kaufpreis = merged.kaufpreis;
+		daten.kaufpreis = resolveExpressionValue(merged.kaufpreis);
 	}
 	if (merged.flaeche !== undefined) {
-		daten.wohnflaeche = merged.flaeche;
+		daten.wohnflaeche = resolveExpressionValue(merged.flaeche);
 	}
 	if (merged.baujahr !== undefined) {
-		daten.baujahr = merged.baujahr;
+		daten.baujahr = resolveExpressionValue(merged.baujahr);
 	}
 	if (merged.zustand) {
-		daten.zustand = merged.zustand;
+		daten.zustand = resolveExpressionValue(merged.zustand);
 	}
 	if (merged.datenJson) {
-		const raw = merged.datenJson;
+		const raw = resolveExpressionValue(merged.datenJson);
 		const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
 		if (parsed && typeof parsed === 'object') {
 			Object.assign(daten, parsed);
@@ -209,7 +248,7 @@ export const immobilieDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'GET',
-						url: '=/api/v2/immobilien?organisation_id={{$parameter.organisationId || $credentials.organisationId}}&page={{$parameter.page || 1}}&per_page={{$parameter.perPage || 20}}',
+						url: '=/api/v2/immobilien?organisation_id={{$credentials.organisationId}}&page={{$parameter.page || 1}}&per_page={{$parameter.perPage || 20}}',
 					},
 				},
 			},
@@ -413,20 +452,6 @@ export const immobilieDescription: INodeProperties[] = [
 		description: 'Page number (>= 1)',
 	},
 	{
-		displayName: 'Organisation ID',
-		name: 'organisationId',
-		type: 'string',
-		displayOptions: {
-			show: {
-				...showOnlyForImmobilie,
-				operation: ['getAll'],
-			},
-		},
-		default: '',
-		description:
-			'Organisation scope for listing immobilien. Defaults to the Organisation ID from the credentials when left empty.',
-	},
-	{
 		displayName: 'Per Page',
 		name: 'perPage',
 		type: 'number',
@@ -470,20 +495,6 @@ export const immobilieDescription: INodeProperties[] = [
 			},
 		},
 		default: 'ETW',
-	},
-	{
-		displayName: 'Additional Fields (Expression JSON)',
-		name: 'additionalFieldsExpression',
-		type: 'json',
-		default: '',
-		description:
-			'Optional JSON object to override Additional Fields. Useful when you need expressions for nested fields.',
-		displayOptions: {
-			show: {
-				...showOnlyForImmobilie,
-				operation: ['create'],
-			},
-		},
 	},
 	{
 		displayName: 'Additional Fields',
@@ -536,20 +547,6 @@ export const immobilieDescription: INodeProperties[] = [
 				default: '',
 			},
 		],
-	},
-	{
-		displayName: 'Update Fields (Expression JSON)',
-		name: 'updateFieldsExpression',
-		type: 'json',
-		default: '',
-		description:
-			'Optional JSON object to override Update Fields. Useful when you need expressions for nested fields.',
-		displayOptions: {
-			show: {
-				...showOnlyForImmobilie,
-				operation: ['update'],
-			},
-		},
 	},
 	{
 		displayName: 'Update Fields',

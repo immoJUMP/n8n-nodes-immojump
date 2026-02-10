@@ -2,8 +2,10 @@ import {
 	type INodeType,
 	type INodeTypeDescription,
 	type ILoadOptionsFunctions,
+	type IAllExecuteFunctions,
 	type INodePropertyOptions,
-	type IRequestOptions,
+	type IHttpRequestOptions,
+	NodeConnectionTypes,
 } from 'n8n-workflow';
 import { immobilieDescription } from './resources/immobilie';
 import { contactDescription } from './resources/contact';
@@ -76,8 +78,8 @@ export class Immojump implements INodeType {
 			name: 'Immojump',
 		},
 		usableAsTool: true,
-		inputs: ['main'],
-		outputs: ['main'],
+		inputs: [NodeConnectionTypes.Main],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [{ name: 'immojumpApi', required: true }],
 		requestDefaults: {
 			baseURL: '={{ ($credentials.baseUrl || "").replace(/\\/$/, "").replace(/\\/api$/, "") }}',
@@ -122,37 +124,23 @@ export class Immojump implements INodeType {
 			async getStatuses(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				const credentials = await this.getCredentials('immojumpApi');
 				const baseUrl = credentials.baseUrl as string;
-				const token = credentials.token as string;
-				const organisationId = credentials.organisationId as string | undefined;
 
-				const headers: Record<string, string> = {
-					Authorization: `Bearer ${token}`,
-				};
-				if (organisationId) {
-					headers['X-Organisation-Id'] = organisationId;
-				}
 				const normalisedBaseUrl = baseUrl.replace(/\/$/, '');
-				const requestOptions: IRequestOptions = {
+				const requestOptions: IHttpRequestOptions = {
 					method: 'GET',
 					url: `${normalisedBaseUrl}/api/statuses/statuses`,
-					headers,
 					json: true,
 				};
 
-				this.logger.debug('immojump.getStatuses request', {
-					url: requestOptions.url,
-					hasOrganisationId: Boolean(organisationId),
-				});
-
 				try {
-					const response = await this.helpers.request(requestOptions);
+					const response = await this.helpers.httpRequestWithAuthentication.call(
+						this as unknown as IAllExecuteFunctions,
+						'immojumpApi',
+						requestOptions,
+					);
 
 					if (Array.isArray(response)) {
 						const statuses = response.filter(isStatusResponse);
-						this.logger.debug('immojump.getStatuses response', {
-							count: statuses.length,
-							url: requestOptions.url,
-						});
 						return statuses.map((status) => ({
 							name:
 								typeof status.name === 'string' && status.name.trim() !== ''
@@ -162,18 +150,9 @@ export class Immojump implements INodeType {
 						}));
 					}
 
-					this.logger.warn('immojump.getStatuses unexpected payload', {
-						type: typeof response,
-						url: requestOptions.url,
-					});
 					return [];
 				} catch (error: unknown) {
-					const { message, statusCode } = parseErrorDetails(error);
-					this.logger.error('immojump.getStatuses failed', {
-						message,
-						statusCode,
-						url: requestOptions.url,
-					});
+					const { message } = parseErrorDetails(error);
 					return [
 						{ name: 'Debug: API Error', value: 'error' },
 						{ name: `Debug: ${message ?? 'Unknown error'}`, value: 'debug' },
@@ -184,45 +163,30 @@ export class Immojump implements INodeType {
 			async getTags(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				const credentials = await this.getCredentials('immojumpApi');
 				const baseUrl = credentials.baseUrl as string;
-				const token = credentials.token as string;
 				const organisationId = credentials.organisationId as string | undefined;
 
-				const headers: Record<string, string> = {
-					Authorization: `Bearer ${token}`,
-				};
-				if (organisationId) {
-					headers['X-Organisation-Id'] = organisationId;
-				}
-
 				if (!organisationId) {
-					this.logger.error('immojump.getTags missing organisationId');
 					return [
 						{ name: 'Debug: Missing organisation', value: 'missing_org' },
 					];
 				}
 
 				const normalisedBaseUrl = baseUrl.replace(/\/$/, '');
-				const requestOptions: IRequestOptions = {
+				const requestOptions: IHttpRequestOptions = {
 					method: 'GET',
 					url: `${normalisedBaseUrl}/api/${organisationId}/tags`,
-					headers,
 					json: true,
 				};
 
-				this.logger.debug('immojump.getTags request', {
-					url: requestOptions.url,
-					hasOrganisationId: Boolean(organisationId),
-				});
-
 				try {
-					const response = await this.helpers.request(requestOptions);
+					const response = await this.helpers.httpRequestWithAuthentication.call(
+						this as unknown as IAllExecuteFunctions,
+						'immojumpApi',
+						requestOptions,
+					);
 
 					if (Array.isArray(response)) {
 						const tags = response.filter(isTagResponse);
-						this.logger.debug('immojump.getTags response', {
-							count: tags.length,
-							url: requestOptions.url,
-						});
 						return tags.map((tag) => ({
 							name:
 								typeof tag.name === 'string' && tag.name.trim() !== ''
@@ -232,18 +196,9 @@ export class Immojump implements INodeType {
 						}));
 					}
 
-					this.logger.warn('immojump.getTags unexpected payload', {
-						type: typeof response,
-						url: requestOptions.url,
-					});
 					return [];
 				} catch (error: unknown) {
-					const { message, statusCode } = parseErrorDetails(error);
-					this.logger.error('immojump.getTags failed', {
-						message,
-						statusCode,
-						url: requestOptions.url,
-					});
+					const { message } = parseErrorDetails(error);
 					return [
 						{ name: 'Debug: API Error', value: 'error' },
 						{ name: `Debug: ${message ?? 'Unknown error'}`, value: 'debug' },

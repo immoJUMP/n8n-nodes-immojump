@@ -86,7 +86,7 @@ describe('buildContactUpdateBody', () => {
 		expect(body).toEqual({
 			first_name: 'New',
 			last_name: 'Name',
-			email: 'top@example.com',
+			email: 'ignored@example.com',
 			phone: '333',
 			mobile: '222',
 			address: 'Addr',

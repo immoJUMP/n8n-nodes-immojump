@@ -1,5 +1,7 @@
 import type { INodeProperties } from 'n8n-workflow';
 
+declare const $evaluateExpression: (expression: string, itemIndex?: number) => unknown;
+
 const showOnlyForContact = {
 	resource: ['contact'],
 };
@@ -8,24 +10,48 @@ export const buildContactCreateBody = (
 	parameter: Record<string, unknown>,
 	credentials: Record<string, unknown>,
 ) => {
-	const sanitizeEmail = (value: unknown): string | undefined => {
-		if (value === undefined || value === null) {
-			return undefined;
+	const resolveExpressionValue = (value: unknown): unknown => {
+		if (typeof value !== 'string') {
+			return value;
 		}
-		const trimmed = String(value).trim();
+		const trimmed = value.trim();
 		if (trimmed === '') {
+			return value;
+		}
+		const hasExpression =
+			trimmed.startsWith('=') || (trimmed.includes('{{') && trimmed.includes('}}'));
+		if (!hasExpression || typeof $evaluateExpression !== 'function') {
+			return value;
+		}
+		const expression = trimmed.startsWith('=') ? trimmed.slice(1) : trimmed;
+		return $evaluateExpression(expression);
+	};
+
+	const resolveStringValue = (value: unknown): string | undefined => {
+		const resolved = resolveExpressionValue(value);
+		if (resolved === undefined || resolved === null) {
 			return undefined;
 		}
-		const cleaned = trimmed.replace(/^=/, '');
+		const trimmed = String(resolved).trim();
+		return trimmed === '' ? undefined : trimmed;
+	};
+
+	const sanitizeEmail = (value: unknown): string | undefined => {
+		const resolved = resolveStringValue(value);
+		if (!resolved) {
+			return undefined;
+		}
+		const cleaned = resolved.replace(/^=/, '');
 		return cleaned === '' ? undefined : cleaned;
 	};
 
 	const parseObject = (value: unknown, fieldName: string) => {
-		if (value === undefined || value === null || value === '') {
+		const resolved = resolveExpressionValue(value);
+		if (resolved === undefined || resolved === null || resolved === '') {
 			return undefined;
 		}
-		if (typeof value === 'string') {
-			const trimmed = value.trim();
+		if (typeof resolved === 'string') {
+			const trimmed = resolved.trim();
 			if (trimmed === '') {
 				return undefined;
 			}
@@ -35,8 +61,8 @@ export const buildContactCreateBody = (
 				throw new Error(`${fieldName} must be valid JSON`);
 			}
 		}
-		if (typeof value === 'object') {
-			return value;
+		if (typeof resolved === 'object') {
+			return resolved;
 		}
 		throw new Error(`${fieldName} must be an object or JSON string`);
 	};
@@ -51,54 +77,83 @@ export const buildContactCreateBody = (
 	const merged = overrides ? { ...additional, ...overrides } : additional;
 
 	const body: Record<string, unknown> = {
-		first_name: parameter.firstName,
-		last_name: parameter.lastName,
+		first_name: resolveExpressionValue(parameter.firstName),
+		last_name: resolveExpressionValue(parameter.lastName),
 		organisation_id: credentials.organisationId,
 	};
 
-	const emailValue = pickValue(parameter.email, merged.email);
+	const emailValue = pickValue(merged.email, parameter.email);
 	const email = sanitizeEmail(emailValue);
 	if (email !== undefined) {
 		body.email = email;
 	}
-	if (merged.phone !== undefined && merged.phone !== '') {
-		body.phone = merged.phone;
+	const phone = resolveStringValue(merged.phone);
+	if (phone !== undefined) {
+		body.phone = phone;
 	}
-	if (merged.mobile !== undefined && merged.mobile !== '') {
-		body.mobile = merged.mobile;
+	const mobile = resolveStringValue(merged.mobile);
+	if (mobile !== undefined) {
+		body.mobile = mobile;
 	}
-	if (merged.address !== undefined && merged.address !== '') {
-		body.address = merged.address;
+	const address = resolveStringValue(merged.address);
+	if (address !== undefined) {
+		body.address = address;
 	}
-	if (merged.role !== undefined && merged.role !== '') {
-		body.role = merged.role;
+	const role = resolveStringValue(merged.role);
+	if (role !== undefined) {
+		body.role = role;
 	}
-	if (merged.company !== undefined && merged.company !== '') {
-		body.company = merged.company;
+	const company = resolveStringValue(merged.company);
+	if (company !== undefined) {
+		body.company = company;
 	}
 
 	return body;
 };
 
 export const buildContactUpdateBody = (parameter: Record<string, unknown>) => {
-	const sanitizeEmail = (value: unknown): string | undefined => {
-		if (value === undefined || value === null) {
-			return undefined;
+	const resolveExpressionValue = (value: unknown): unknown => {
+		if (typeof value !== 'string') {
+			return value;
 		}
-		const trimmed = String(value).trim();
+		const trimmed = value.trim();
 		if (trimmed === '') {
+			return value;
+		}
+		const hasExpression =
+			trimmed.startsWith('=') || (trimmed.includes('{{') && trimmed.includes('}}'));
+		if (!hasExpression || typeof $evaluateExpression !== 'function') {
+			return value;
+		}
+		const expression = trimmed.startsWith('=') ? trimmed.slice(1) : trimmed;
+		return $evaluateExpression(expression);
+	};
+
+	const resolveStringValue = (value: unknown): string | undefined => {
+		const resolved = resolveExpressionValue(value);
+		if (resolved === undefined || resolved === null) {
 			return undefined;
 		}
-		const cleaned = trimmed.replace(/^=/, '');
+		const trimmed = String(resolved).trim();
+		return trimmed === '' ? undefined : trimmed;
+	};
+
+	const sanitizeEmail = (value: unknown): string | undefined => {
+		const resolved = resolveStringValue(value);
+		if (!resolved) {
+			return undefined;
+		}
+		const cleaned = resolved.replace(/^=/, '');
 		return cleaned === '' ? undefined : cleaned;
 	};
 
 	const parseObject = (value: unknown, fieldName: string) => {
-		if (value === undefined || value === null || value === '') {
+		const resolved = resolveExpressionValue(value);
+		if (resolved === undefined || resolved === null || resolved === '') {
 			return undefined;
 		}
-		if (typeof value === 'string') {
-			const trimmed = value.trim();
+		if (typeof resolved === 'string') {
+			const trimmed = resolved.trim();
 			if (trimmed === '') {
 				return undefined;
 			}
@@ -108,8 +163,8 @@ export const buildContactUpdateBody = (parameter: Record<string, unknown>) => {
 				throw new Error(`${fieldName} must be valid JSON`);
 			}
 		}
-		if (typeof value === 'object') {
-			return value;
+		if (typeof resolved === 'object') {
+			return resolved;
 		}
 		throw new Error(`${fieldName} must be an object or JSON string`);
 	};
@@ -125,32 +180,39 @@ export const buildContactUpdateBody = (parameter: Record<string, unknown>) => {
 
 	const payload: Record<string, unknown> = {};
 
-	if (merged.firstName !== undefined && merged.firstName !== '') {
-		payload.first_name = merged.firstName;
+	const firstName = resolveStringValue(merged.firstName);
+	if (firstName !== undefined) {
+		payload.first_name = firstName;
 	}
-	if (merged.lastName !== undefined && merged.lastName !== '') {
-		payload.last_name = merged.lastName;
+	const lastName = resolveStringValue(merged.lastName);
+	if (lastName !== undefined) {
+		payload.last_name = lastName;
 	}
 
-	const emailValue = pickValue(parameter.email, merged.email);
+	const emailValue = pickValue(merged.email, parameter.email);
 	const email = sanitizeEmail(emailValue);
 	if (email !== undefined) {
 		payload.email = email;
 	}
-	if (merged.phone !== undefined && merged.phone !== '') {
-		payload.phone = merged.phone;
+	const phone = resolveStringValue(merged.phone);
+	if (phone !== undefined) {
+		payload.phone = phone;
 	}
-	if (merged.mobile !== undefined && merged.mobile !== '') {
-		payload.mobile = merged.mobile;
+	const mobile = resolveStringValue(merged.mobile);
+	if (mobile !== undefined) {
+		payload.mobile = mobile;
 	}
-	if (merged.address !== undefined && merged.address !== '') {
-		payload.address = merged.address;
+	const address = resolveStringValue(merged.address);
+	if (address !== undefined) {
+		payload.address = address;
 	}
-	if (merged.role !== undefined && merged.role !== '') {
-		payload.role = merged.role;
+	const role = resolveStringValue(merged.role);
+	if (role !== undefined) {
+		payload.role = role;
 	}
-	if (merged.company !== undefined && merged.company !== '') {
-		payload.company = merged.company;
+	const company = resolveStringValue(merged.company);
+	if (company !== undefined) {
+		payload.company = company;
 	}
 
 	return payload;
@@ -364,35 +426,6 @@ export const contactDescription: INodeProperties[] = [
 		default: '',
 	},
 	{
-		displayName: 'Email (Expression)',
-		name: 'email',
-		type: 'string',
-		default: '',
-		placeholder: 'name@email.com',
-		description:
-			'Use this field when you need expressions. It overrides Additional Fields / Update Fields Email.',
-		displayOptions: {
-			show: {
-				...showOnlyForContact,
-				operation: ['create', 'update'],
-			},
-		},
-	},
-	{
-		displayName: 'Additional Fields (Expression JSON)',
-		name: 'additionalFieldsExpression',
-		type: 'json',
-		default: '',
-		description:
-			'Optional JSON object to override Additional Fields. Useful when you need expressions for nested fields.',
-		displayOptions: {
-			show: {
-				...showOnlyForContact,
-				operation: ['create'],
-			},
-		},
-	},
-	{
 		displayName: 'Additional Fields',
 		name: 'additionalFields',
 		type: 'collection',
@@ -443,20 +476,6 @@ export const contactDescription: INodeProperties[] = [
 				default: '',
 			},
 		],
-	},
-	{
-		displayName: 'Update Fields (Expression JSON)',
-		name: 'updateFieldsExpression',
-		type: 'json',
-		default: '',
-		description:
-			'Optional JSON object to override Update Fields. Useful when you need expressions for nested fields.',
-		displayOptions: {
-			show: {
-				...showOnlyForContact,
-				operation: ['update'],
-			},
-		},
 	},
 	{
 		displayName: 'Update Fields',

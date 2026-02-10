@@ -1,5 +1,7 @@
 import type { INodeProperties } from 'n8n-workflow';
 
+declare const $evaluateExpression: (expression: string, itemIndex?: number) => unknown;
+
 const showOnlyForActivity = {
 	resource: ['activity'],
 };
@@ -8,12 +10,39 @@ export const buildActivityCreateBody = (
 	parameter: Record<string, unknown>,
 	credentials: Record<string, unknown>,
 ) => {
-	const parseObject = (value: unknown, fieldName: string) => {
-		if (value === undefined || value === null || value === '') {
+	const resolveExpressionValue = (value: unknown): unknown => {
+		if (typeof value !== 'string') {
+			return value;
+		}
+		const trimmed = value.trim();
+		if (trimmed === '') {
+			return value;
+		}
+		const hasExpression =
+			trimmed.startsWith('=') || (trimmed.includes('{{') && trimmed.includes('}}'));
+		if (!hasExpression || typeof $evaluateExpression !== 'function') {
+			return value;
+		}
+		const expression = trimmed.startsWith('=') ? trimmed.slice(1) : trimmed;
+		return $evaluateExpression(expression);
+	};
+
+	const resolveStringValue = (value: unknown): string | undefined => {
+		const resolved = resolveExpressionValue(value);
+		if (resolved === undefined || resolved === null) {
 			return undefined;
 		}
-		if (typeof value === 'string') {
-			const trimmed = value.trim();
+		const trimmed = String(resolved).trim();
+		return trimmed === '' ? undefined : trimmed;
+	};
+
+	const parseObject = (value: unknown, fieldName: string) => {
+		const resolved = resolveExpressionValue(value);
+		if (resolved === undefined || resolved === null || resolved === '') {
+			return undefined;
+		}
+		if (typeof resolved === 'string') {
+			const trimmed = resolved.trim();
 			if (trimmed === '') {
 				return undefined;
 			}
@@ -23,8 +52,8 @@ export const buildActivityCreateBody = (
 				throw new Error(`${fieldName} must be valid JSON`);
 			}
 		}
-		if (typeof value === 'object') {
-			return value;
+		if (typeof resolved === 'object') {
+			return resolved;
 		}
 		throw new Error(`${fieldName} must be an object or JSON string`);
 	};
@@ -33,10 +62,10 @@ export const buildActivityCreateBody = (
 		primary === undefined || primary === null || primary === '' ? fallback : primary;
 
 	const body: Record<string, unknown> = {
-		title: parameter.title,
-		type: parameter.type,
-		status: parameter.status,
-		priority: parameter.priority,
+		title: resolveExpressionValue(parameter.title),
+		type: resolveExpressionValue(parameter.type),
+		status: resolveExpressionValue(parameter.status),
+		priority: resolveExpressionValue(parameter.priority),
 	};
 
 	const additional = (parameter.additionalFields as Record<string, unknown>) ?? {};
@@ -45,35 +74,41 @@ export const buildActivityCreateBody = (
 		| undefined;
 	const merged = overrides ? { ...additional, ...overrides } : additional;
 
-	const description = pickValue(parameter.descriptionExpression, merged.description);
-	if (description !== undefined && description !== '') {
+	const descriptionSource = pickValue(merged.description, parameter.descriptionExpression);
+	const description = resolveStringValue(descriptionSource);
+	if (description !== undefined) {
 		body.description = description;
 	}
-	if (merged.scheduledStart) {
-		body.scheduled_start = merged.scheduledStart;
+	const scheduledStart = resolveExpressionValue(merged.scheduledStart);
+	if (scheduledStart !== undefined && scheduledStart !== '') {
+		body.scheduled_start = scheduledStart;
 	}
-	if (merged.scheduledEnd) {
-		body.scheduled_end = merged.scheduledEnd;
+	const scheduledEnd = resolveExpressionValue(merged.scheduledEnd);
+	if (scheduledEnd !== undefined && scheduledEnd !== '') {
+		body.scheduled_end = scheduledEnd;
 	}
-	if (merged.actualStart) {
-		body.actual_start = merged.actualStart;
+	const actualStart = resolveExpressionValue(merged.actualStart);
+	if (actualStart !== undefined && actualStart !== '') {
+		body.actual_start = actualStart;
 	}
-	if (merged.actualEnd) {
-		body.actual_end = merged.actualEnd;
+	const actualEnd = resolveExpressionValue(merged.actualEnd);
+	if (actualEnd !== undefined && actualEnd !== '') {
+		body.actual_end = actualEnd;
 	}
-	if (merged.assignedToId) {
-		body.assigned_to_id = merged.assignedToId;
+	const assignedToId = resolveStringValue(merged.assignedToId);
+	if (assignedToId !== undefined) {
+		body.assigned_to_id = assignedToId;
 	}
-	if (parameter.immobilienId) {
-		body.immobilien_id = parameter.immobilienId;
+	const immobilienId = resolveExpressionValue(pickValue(merged.immobilienId, parameter.immobilienId));
+	if (immobilienId !== undefined && immobilienId !== '') {
+		body.immobilien_id = immobilienId;
 	}
 
-	const organisationId = pickValue(parameter.organisationId, credentials.organisationId);
-	if (organisationId) {
-		body.organisation_id = organisationId;
+	if (credentials.organisationId) {
+		body.organisation_id = credentials.organisationId;
 	}
 
-	const rawContactIds = merged.contactIds;
+	const rawContactIds = resolveExpressionValue(merged.contactIds);
 	if (rawContactIds !== undefined && rawContactIds !== '' && rawContactIds !== null) {
 		let parsedContactIds = rawContactIds;
 		if (typeof rawContactIds === 'string') {
@@ -94,12 +129,39 @@ export const buildActivityCreateBody = (
 };
 
 export const buildActivityUpdateBody = (parameter: Record<string, unknown>) => {
-	const parseObject = (value: unknown, fieldName: string) => {
-		if (value === undefined || value === null || value === '') {
+	const resolveExpressionValue = (value: unknown): unknown => {
+		if (typeof value !== 'string') {
+			return value;
+		}
+		const trimmed = value.trim();
+		if (trimmed === '') {
+			return value;
+		}
+		const hasExpression =
+			trimmed.startsWith('=') || (trimmed.includes('{{') && trimmed.includes('}}'));
+		if (!hasExpression || typeof $evaluateExpression !== 'function') {
+			return value;
+		}
+		const expression = trimmed.startsWith('=') ? trimmed.slice(1) : trimmed;
+		return $evaluateExpression(expression);
+	};
+
+	const resolveStringValue = (value: unknown): string | undefined => {
+		const resolved = resolveExpressionValue(value);
+		if (resolved === undefined || resolved === null) {
 			return undefined;
 		}
-		if (typeof value === 'string') {
-			const trimmed = value.trim();
+		const trimmed = String(resolved).trim();
+		return trimmed === '' ? undefined : trimmed;
+	};
+
+	const parseObject = (value: unknown, fieldName: string) => {
+		const resolved = resolveExpressionValue(value);
+		if (resolved === undefined || resolved === null || resolved === '') {
+			return undefined;
+		}
+		if (typeof resolved === 'string') {
+			const trimmed = resolved.trim();
 			if (trimmed === '') {
 				return undefined;
 			}
@@ -109,8 +171,8 @@ export const buildActivityUpdateBody = (parameter: Record<string, unknown>) => {
 				throw new Error(`${fieldName} must be valid JSON`);
 			}
 		}
-		if (typeof value === 'object') {
-			return value;
+		if (typeof resolved === 'object') {
+			return resolved;
 		}
 		throw new Error(`${fieldName} must be an object or JSON string`);
 	};
@@ -126,45 +188,51 @@ export const buildActivityUpdateBody = (parameter: Record<string, unknown>) => {
 	const merged = overrides ? { ...fields, ...overrides } : fields;
 
 	if (merged.title !== undefined) {
-		payload.title = merged.title;
+		payload.title = resolveExpressionValue(merged.title);
 	}
 	if (merged.type !== undefined) {
-		payload.type = merged.type;
+		payload.type = resolveExpressionValue(merged.type);
 	}
 	if (merged.status !== undefined) {
-		payload.status = merged.status;
+		payload.status = resolveExpressionValue(merged.status);
 	}
 	if (merged.priority !== undefined) {
-		payload.priority = merged.priority;
+		payload.priority = resolveExpressionValue(merged.priority);
 	}
 
-	const description = pickValue(parameter.descriptionExpression, merged.description);
-	if (description !== undefined && description !== '') {
+	const descriptionSource = pickValue(merged.description, parameter.descriptionExpression);
+	const description = resolveStringValue(descriptionSource);
+	if (description !== undefined) {
 		payload.description = description;
 	}
 	if (merged.scheduledStart !== undefined) {
-		payload.scheduled_start = merged.scheduledStart;
+		payload.scheduled_start = resolveExpressionValue(merged.scheduledStart);
 	}
 	if (merged.scheduledEnd !== undefined) {
-		payload.scheduled_end = merged.scheduledEnd;
+		payload.scheduled_end = resolveExpressionValue(merged.scheduledEnd);
 	}
 	if (merged.actualStart !== undefined) {
-		payload.actual_start = merged.actualStart;
+		payload.actual_start = resolveExpressionValue(merged.actualStart);
 	}
 	if (merged.actualEnd !== undefined) {
-		payload.actual_end = merged.actualEnd;
+		payload.actual_end = resolveExpressionValue(merged.actualEnd);
 	}
 	if (merged.assignedToId !== undefined) {
-		payload.assigned_to_id = merged.assignedToId;
+		const assignedToId = resolveStringValue(merged.assignedToId);
+		if (assignedToId !== undefined) {
+			payload.assigned_to_id = assignedToId;
+		}
 	}
 	if (merged.immobilienId !== undefined) {
-		payload.immobilien_id = merged.immobilienId || null;
+		const immobilienId = resolveExpressionValue(merged.immobilienId);
+		payload.immobilien_id = immobilienId || null;
 	}
-	if (merged.contactIds !== undefined && merged.contactIds !== '' && merged.contactIds !== null) {
-		let parsedContactIds = merged.contactIds;
-		if (typeof merged.contactIds === 'string') {
+	const rawContactIds = resolveExpressionValue(merged.contactIds);
+	if (rawContactIds !== undefined && rawContactIds !== '' && rawContactIds !== null) {
+		let parsedContactIds = rawContactIds;
+		if (typeof rawContactIds === 'string') {
 			try {
-				parsedContactIds = JSON.parse(merged.contactIds);
+				parsedContactIds = JSON.parse(rawContactIds);
 			} catch {
 				throw new Error('contactIds must be valid JSON (e.g. ["uuid1","uuid2"])');
 			}
@@ -202,15 +270,16 @@ export const activityDescription: INodeProperties[] = [
 						method: 'GET',
 						url: '/api/activities/activities',
 						qs: {
-							organisation_id:
-								'={{$parameter.organisationId || $credentials.organisationId || undefined}}',
+							organisation_id: '={{$credentials.organisationId || undefined}}',
 							page: '={{$parameter.page || 1}}',
 							per_page: '={{$parameter.perPage || 25}}',
-							q: '={{$parameter.search || undefined}}',
-							type: '={{$parameter.typeFilter || undefined}}',
-							status: '={{$parameter.statusFilter || undefined}}',
-							priority: '={{$parameter.priorityFilter || undefined}}',
-							immobilie: '={{$parameter.immobilienId || undefined}}',
+							q: '={{$parameter.additionalOptions?.search || $parameter.search || undefined}}',
+							type: '={{$parameter.additionalOptions?.typeFilter || $parameter.typeFilter || undefined}}',
+							status: '={{$parameter.additionalOptions?.statusFilter || $parameter.statusFilter || undefined}}',
+							priority:
+								'={{$parameter.additionalOptions?.priorityFilter || $parameter.priorityFilter || undefined}}',
+							immobilie:
+								'={{$parameter.additionalOptions?.immobilienId || $parameter.immobilienId || undefined}}',
 						},
 					},
 				},
@@ -219,7 +288,7 @@ export const activityDescription: INodeProperties[] = [
 				name: 'Get',
 				value: 'get',
 				action: 'Get activity',
-				description: 'Retrieve a single activity by Immobilie and title',
+				description: 'Retrieve a single activity by property and title',
 				routing: {
 					request: {
 						method: 'GET',
@@ -238,7 +307,8 @@ export const activityDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'POST',
-						url: '={{ $parameter.immobilienId ? \'/api/activities/activities/immobilie/\' + $parameter.immobilienId : \'/api/activities/activities\' }}',
+						url:
+							'={{ (() => { const resolveExpressionValue = (value) => { if (typeof value !== "string") { return value; } const trimmed = value.trim(); if (trimmed === "") { return value; } const hasExpression = trimmed.startsWith("=") || (trimmed.includes("{{") && trimmed.includes("}}")); if (!hasExpression || typeof $evaluateExpression !== "function") { return value; } const expression = trimmed.startsWith("=") ? trimmed.slice(1) : trimmed; return $evaluateExpression(expression); }; const additional = $parameter.additionalFields || {}; let overrides = $parameter.additionalFieldsExpression || {}; if (typeof overrides === "string") { try { overrides = JSON.parse(overrides); } catch { overrides = {}; } } const merged = { ...additional, ...(overrides && typeof overrides === "object" ? overrides : {}) }; const rawId = merged.immobilienId || $parameter.immobilienId; const resolvedId = resolveExpressionValue(rawId); return resolvedId ? "/api/activities/activities/immobilie/" + resolvedId : "/api/activities/activities"; })() }}',
 						body: activityCreateBodyExpression,
 					},
 				},
@@ -247,7 +317,7 @@ export const activityDescription: INodeProperties[] = [
 				name: 'Update',
 				value: 'update',
 				action: 'Update activity',
-				description: 'Update an existing activity by Immobilie and title',
+				description: 'Update an existing activity by property and title',
 				routing: {
 					request: {
 						method: 'PUT',
@@ -263,7 +333,7 @@ export const activityDescription: INodeProperties[] = [
 				name: 'Delete',
 				value: 'delete',
 				action: 'Delete activity',
-				description: 'Delete an activity by Immobilie and title',
+				description: 'Delete an activity by property and title',
 				routing: {
 					request: {
 						method: 'DELETE',
@@ -289,37 +359,10 @@ export const activityDescription: INodeProperties[] = [
 			},
 		},
 		default: '',
-		description: 'Exact activity title to look up (must be unique within the Immobilie)',
+		description: 'Exact activity title to look up (must be unique within the property)',
 	},
 	{
-		displayName: 'Organisation ID',
-		name: 'organisationId',
-		type: 'string',
-		displayOptions: {
-			show: {
-				...showOnlyForActivity,
-				operation: ['getAll', 'create'],
-			},
-		},
-		default: '',
-		description:
-			'Overrides the credential organisation for the request. Defaults to the organisation from the credentials.',
-	},
-	{
-		displayName: 'Immobilien ID',
-		name: 'immobilienId',
-		type: 'string',
-		displayOptions: {
-			show: {
-				...showOnlyForActivity,
-				operation: ['getAll', 'create', 'update'],
-			},
-		},
-		default: '',
-		description: 'ID of the Immobilie to filter by or associate with the activity',
-	},
-	{
-		displayName: 'Immobilien ID',
+		displayName: 'Property ID',
 		name: 'immobilienIdUpdate',
 		type: 'string',
 		required: true,
@@ -330,10 +373,10 @@ export const activityDescription: INodeProperties[] = [
 			},
 		},
 		default: '',
-		description: 'ID of the Immobilie whose activity should be updated',
+		description: 'ID of the property whose activity should be updated',
 	},
 	{
-		displayName: 'Immobilien ID',
+		displayName: 'Property ID',
 		name: 'immobilienIdDelete',
 		type: 'string',
 		required: true,
@@ -344,7 +387,7 @@ export const activityDescription: INodeProperties[] = [
 			},
 		},
 		default: '',
-		description: 'ID of the Immobilie whose activity should be deleted',
+		description: 'ID of the property whose activity should be deleted',
 	},
 	{
 		displayName: 'Activity Title',
@@ -358,7 +401,7 @@ export const activityDescription: INodeProperties[] = [
 			},
 		},
 		default: '',
-		description: 'Exact activity title to update (must be unique within the Immobilie)',
+		description: 'Exact activity title to update (must be unique within the property)',
 	},
 	{
 		displayName: 'Activity Title',
@@ -372,10 +415,10 @@ export const activityDescription: INodeProperties[] = [
 			},
 		},
 		default: '',
-		description: 'Exact activity title to delete (must be unique within the Immobilie)',
+		description: 'Exact activity title to delete (must be unique within the property)',
 	},
 	{
-		displayName: 'Immobilien ID',
+		displayName: 'Property ID',
 		name: 'immobilienIdGet',
 		type: 'string',
 		required: true,
@@ -386,7 +429,7 @@ export const activityDescription: INodeProperties[] = [
 			},
 		},
 		default: '',
-		description: 'ID of the Immobilie whose activity title should be looked up',
+		description: 'ID of the property whose activity title should be looked up',
 	},
 	{
 		displayName: 'Page',
@@ -420,80 +463,78 @@ export const activityDescription: INodeProperties[] = [
 		default: 25,
 	},
 	{
-		displayName: 'Search',
-		name: 'search',
-		type: 'string',
+		displayName: 'Additional Options',
+		name: 'additionalOptions',
+		type: 'collection',
+		placeholder: 'Add Option',
+		default: {},
 		displayOptions: {
 			show: {
 				...showOnlyForActivity,
 				operation: ['getAll'],
 			},
 		},
-		default: '',
-		description: 'Text to search within title, description and other fields',
-	},
-	{
-		displayName: 'Type Filter',
-		name: 'typeFilter',
-		type: 'options',
 		options: [
-			{ name: 'Anruf', value: 'ANRUF' },
-			{ name: 'Any', value: 'all' },
-			{ name: 'Besichtigung', value: 'BESICHTIGUNG' },
-			{ name: 'Brief', value: 'BRIEF' },
-			{ name: 'E-Mail', value: 'E-MAIL' },
-			{ name: 'Meeting', value: 'MEETING' },
-			{ name: 'Notiz', value: 'NOTIZ' },
-			{ name: 'Sonstiges', value: 'SONSTIGES' },
-		],
-		displayOptions: {
-			show: {
-				...showOnlyForActivity,
-				operation: ['getAll'],
+			{
+				displayName: 'Priority Filter',
+				name: 'priorityFilter',
+				type: 'options',
+				options: [
+					{ name: 'Any', value: 'all' },
+					{ name: 'High', value: 'Hoch' },
+					{ name: 'Low', value: 'Niedrig' },
+					{ name: 'Medium', value: 'Mittel' },
+					{ name: 'Not Set', value: 'NA' },
+				],
+				default: 'all',
+				description: 'Filter by priority',
 			},
-		},
-		default: 'all',
-		description: 'Filter by activity type',
-	},
-	{
-		displayName: 'Status Filter',
-		name: 'statusFilter',
-		type: 'options',
-		options: [
-			{ name: 'Abgebrochen', value: 'Abgebrochen' },
-			{ name: 'Abgeschlossen', value: 'Abgeschlossen' },
-			{ name: 'Any', value: 'all' },
-			{ name: 'Geplant', value: 'Geplant' },
-			{ name: 'In Bearbeitung', value: 'In Bearbeitung' },
-		],
-		displayOptions: {
-			show: {
-				...showOnlyForActivity,
-				operation: ['getAll'],
+			{
+				displayName: 'Property ID',
+				name: 'immobilienId',
+				type: 'string',
+				default: '',
+				description: 'Filter by property ID',
 			},
-		},
-		default: 'all',
-		description: 'Filter by status',
-	},
-	{
-		displayName: 'Priority Filter',
-		name: 'priorityFilter',
-		type: 'options',
-		options: [
-			{ name: 'Any', value: 'all' },
-			{ name: 'Hoch', value: 'Hoch' },
-			{ name: 'Mittel', value: 'Mittel' },
-			{ name: 'Nicht Gesetzt', value: 'NA' },
-			{ name: 'Niedrig', value: 'Niedrig' },
-		],
-		displayOptions: {
-			show: {
-				...showOnlyForActivity,
-				operation: ['getAll'],
+			{
+				displayName: 'Search',
+				name: 'search',
+				type: 'string',
+				default: '',
+				description: 'Text to search within title, description and other fields',
 			},
-		},
-		default: 'all',
-		description: 'Filter by priority',
+			{
+				displayName: 'Status Filter',
+				name: 'statusFilter',
+				type: 'options',
+				options: [
+					{ name: 'Any', value: 'all' },
+					{ name: 'Cancelled', value: 'Abgebrochen' },
+					{ name: 'Completed', value: 'Abgeschlossen' },
+					{ name: 'In Progress', value: 'In Bearbeitung' },
+					{ name: 'Planned', value: 'Geplant' },
+				],
+				default: 'all',
+				description: 'Filter by status',
+			},
+			{
+				displayName: 'Type Filter',
+				name: 'typeFilter',
+				type: 'options',
+				options: [
+					{ name: 'Any', value: 'all' },
+					{ name: 'Call', value: 'ANRUF' },
+					{ name: 'Email', value: 'E-MAIL' },
+					{ name: 'Letter', value: 'BRIEF' },
+					{ name: 'Meeting', value: 'MEETING' },
+					{ name: 'Note', value: 'NOTIZ' },
+					{ name: 'Other', value: 'SONSTIGES' },
+					{ name: 'Viewing', value: 'BESICHTIGUNG' },
+				],
+				default: 'all',
+				description: 'Filter by activity type',
+			},
+		],
 	},
 	{
 		displayName: 'Title',
@@ -513,13 +554,13 @@ export const activityDescription: INodeProperties[] = [
 		name: 'type',
 		type: 'options',
 		options: [
-			{ name: 'Anruf', value: 'ANRUF' },
-			{ name: 'Besichtigung', value: 'BESICHTIGUNG' },
-			{ name: 'Brief', value: 'BRIEF' },
-			{ name: 'E-Mail', value: 'E-MAIL' },
+			{ name: 'Call', value: 'ANRUF' },
+			{ name: 'Email', value: 'E-MAIL' },
+			{ name: 'Letter', value: 'BRIEF' },
 			{ name: 'Meeting', value: 'MEETING' },
-			{ name: 'Notiz', value: 'NOTIZ' },
-			{ name: 'Sonstiges', value: 'SONSTIGES' },
+			{ name: 'Note', value: 'NOTIZ' },
+			{ name: 'Other', value: 'SONSTIGES' },
+			{ name: 'Viewing', value: 'BESICHTIGUNG' },
 		],
 		required: true,
 		displayOptions: {
@@ -535,10 +576,10 @@ export const activityDescription: INodeProperties[] = [
 		name: 'status',
 		type: 'options',
 		options: [
-			{ name: 'Abgeschlossen', value: 'Abgeschlossen' },
-			{ name: 'Abgebrochen', value: 'Abgebrochen' },
-			{ name: 'Geplant', value: 'Geplant' },
-			{ name: 'In Bearbeitung', value: 'In Bearbeitung' },
+			{ name: 'Completed', value: 'Abgeschlossen' },
+			{ name: 'Cancelled', value: 'Abgebrochen' },
+			{ name: 'Planned', value: 'Geplant' },
+			{ name: 'In Progress', value: 'In Bearbeitung' },
 		],
 		required: true,
 		displayOptions: {
@@ -554,10 +595,10 @@ export const activityDescription: INodeProperties[] = [
 		name: 'priority',
 		type: 'options',
 		options: [
-			{ name: 'Hoch', value: 'Hoch' },
-			{ name: 'Mittel', value: 'Mittel' },
-			{ name: 'Nicht Gesetzt', value: 'NA' },
-			{ name: 'Niedrig', value: 'Niedrig' },
+			{ name: 'High', value: 'Hoch' },
+			{ name: 'Medium', value: 'Mittel' },
+			{ name: 'Not Set', value: 'NA' },
+			{ name: 'Low', value: 'Niedrig' },
 		],
 		required: true,
 		displayOptions: {
@@ -567,37 +608,6 @@ export const activityDescription: INodeProperties[] = [
 			},
 		},
 		default: 'NA',
-	},
-	{
-		displayName: 'Description (Expression)',
-		name: 'descriptionExpression',
-		type: 'string',
-		typeOptions: {
-			rows: 3,
-		},
-		default: '',
-		description:
-			'Use this field when you need expressions. It overrides Additional Fields / Update Fields Description.',
-		displayOptions: {
-			show: {
-				...showOnlyForActivity,
-				operation: ['create', 'update'],
-			},
-		},
-	},
-	{
-		displayName: 'Additional Fields (Expression JSON)',
-		name: 'additionalFieldsExpression',
-		type: 'json',
-		default: '',
-		description:
-			'Optional JSON object to override Additional Fields. Useful when you need expressions for nested fields.',
-		displayOptions: {
-			show: {
-				...showOnlyForActivity,
-				operation: ['create'],
-			},
-		},
 	},
 	{
 		displayName: 'Additional Fields',
@@ -648,6 +658,13 @@ export const activityDescription: INodeProperties[] = [
 				default: '',
 			},
 			{
+				displayName: 'Property ID',
+				name: 'immobilienId',
+				type: 'string',
+				default: '',
+				description: 'ID of the property to associate with the activity',
+			},
+			{
 				displayName: 'Scheduled End',
 				name: 'scheduledEnd',
 				type: 'dateTime',
@@ -660,20 +677,6 @@ export const activityDescription: INodeProperties[] = [
 				default: '',
 			},
 		],
-	},
-	{
-		displayName: 'Update Fields (Expression JSON)',
-		name: 'updateFieldsExpression',
-		type: 'json',
-		default: '',
-		description:
-			'Optional JSON object to override Update Fields. Useful when you need expressions for nested fields.',
-		displayOptions: {
-			show: {
-				...showOnlyForActivity,
-				operation: ['update'],
-			},
-		},
 	},
 	{
 		displayName: 'Update Fields',
@@ -724,22 +727,22 @@ export const activityDescription: INodeProperties[] = [
 				default: '',
 			},
 			{
-				displayName: 'Immobilien ID',
-				name: 'immobilienId',
-				type: 'string',
-				default: '',
-			},
-			{
 				displayName: 'Priority',
 				name: 'priority',
 				type: 'options',
 				options: [
-					{ name: 'Hoch', value: 'Hoch' },
-					{ name: 'Mittel', value: 'Mittel' },
-					{ name: 'Nicht Gesetzt', value: 'NA' },
-					{ name: 'Niedrig', value: 'Niedrig' },
+					{ name: 'High', value: 'Hoch' },
+					{ name: 'Medium', value: 'Mittel' },
+					{ name: 'Not Set', value: 'NA' },
+					{ name: 'Low', value: 'Niedrig' },
 				],
 				default: 'NA',
+			},
+			{
+				displayName: 'Property ID',
+				name: 'immobilienId',
+				type: 'string',
+				default: '',
 			},
 			{
 				displayName: 'Scheduled End',
@@ -758,10 +761,10 @@ export const activityDescription: INodeProperties[] = [
 				name: 'status',
 				type: 'options',
 				options: [
-					{ name: 'Abgeschlossen', value: 'Abgeschlossen' },
-					{ name: 'Abgebrochen', value: 'Abgebrochen' },
-					{ name: 'Geplant', value: 'Geplant' },
-					{ name: 'In Bearbeitung', value: 'In Bearbeitung' },
+					{ name: 'Completed', value: 'Abgeschlossen' },
+					{ name: 'Cancelled', value: 'Abgebrochen' },
+					{ name: 'Planned', value: 'Geplant' },
+					{ name: 'In Progress', value: 'In Bearbeitung' },
 				],
 				default: 'Geplant',
 			},
@@ -776,13 +779,13 @@ export const activityDescription: INodeProperties[] = [
 				name: 'type',
 				type: 'options',
 				options: [
-					{ name: 'Anruf', value: 'ANRUF' },
-					{ name: 'Besichtigung', value: 'BESICHTIGUNG' },
-					{ name: 'Brief', value: 'BRIEF' },
-					{ name: 'E-Mail', value: 'E-MAIL' },
+					{ name: 'Call', value: 'ANRUF' },
+					{ name: 'Email', value: 'E-MAIL' },
+					{ name: 'Letter', value: 'BRIEF' },
 					{ name: 'Meeting', value: 'MEETING' },
-					{ name: 'Notiz', value: 'NOTIZ' },
-					{ name: 'Sonstiges', value: 'SONSTIGES' },
+					{ name: 'Note', value: 'NOTIZ' },
+					{ name: 'Other', value: 'SONSTIGES' },
+					{ name: 'Viewing', value: 'BESICHTIGUNG' },
 				],
 				default: 'ANRUF',
 			},

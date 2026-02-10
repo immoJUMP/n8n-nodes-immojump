@@ -8,8 +8,10 @@ import {
 	type IWebhookFunctions,
 	type IWebhookResponseData,
 	type ILoadOptionsFunctions,
+	type IAllExecuteFunctions,
 	type INodePropertyOptions,
-	type IRequestOptions,
+	type IHttpRequestOptions,
+	NodeConnectionTypes,
 } from 'n8n-workflow';
 
 type StatusResponse = {
@@ -109,7 +111,7 @@ export class ImmojumpTrigger implements INodeType {
 			name: 'Immojump Trigger',
 		},
 		inputs: [],
-		outputs: [{ type: 'main' as const }],
+		outputs: [NodeConnectionTypes.Main],
 		credentials: [{ name: 'immojumpApi', required: true }],
 		webhooks: [
 			{
@@ -193,12 +195,12 @@ export class ImmojumpTrigger implements INodeType {
 				},
 				default: [],
 				options: [
-					{ name: 'Eigentumswohnung (ETW)', value: 'ETW' },
-					{ name: 'Einfamilienhaus (EFH)', value: 'EFH' },
-					{ name: 'Gewerbe (GEW)', value: 'GEW' },
-					{ name: 'Mehrfamilienhaus (MFH)', value: 'MFH' },
-					{ name: 'Sonstiges', value: 'Sonstiges' },
-					{ name: 'Wohngebäude (WGH)', value: 'WGH' },
+					{ name: 'Commercial (GEW)', value: 'GEW' },
+					{ name: 'Condominium (ETW)', value: 'ETW' },
+					{ name: 'Multi-Family House (MFH)', value: 'MFH' },
+					{ name: 'Other', value: 'Sonstiges' },
+					{ name: 'Residential Building (WGH)', value: 'WGH' },
+					{ name: 'Single-Family House (EFH)', value: 'EFH' },
 				],
 				description: 'Only trigger for specific property types',
 			},
@@ -206,31 +208,7 @@ export class ImmojumpTrigger implements INodeType {
 	};
 
 	async trigger(this: ITriggerFunctions): Promise<ITriggerResponse> {
-		const manualTriggerFunction = async () => {
-			// For manual testing - return sample data
-			const sampleData = {
-				event: 'immobilie.status_changed',
-				immobilie: {
-					id: 'sample-123',
-					title: 'Sample Property',
-					status: 'active',
-					tags: ['premium'],
-					type: 'apartment',
-					address: 'Sample Street 123',
-					price: 250000,
-					createdAt: new Date().toISOString(),
-					updatedAt: new Date().toISOString(),
-				},
-				previousStatus: 'pending',
-				timestamp: new Date().toISOString(),
-			};
-
-			this.emit([this.helpers.returnJsonArray([sampleData])]);
-		};
-
-		return {
-			manualTriggerFunction,
-		};
+		return {};
 	}
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
@@ -305,39 +283,25 @@ export class ImmojumpTrigger implements INodeType {
 			async getStatuses(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				const credentials = await this.getCredentials('immojumpApi');
 				const baseUrl = credentials.baseUrl as string;
-				const token = credentials.token as string;
 				const organisationId = credentials.organisationId as string;
 
-				const headers: Record<string, string> = {
-					Authorization: `Bearer ${token}`,
-				};
-				if (organisationId) {
-					headers['X-Organisation-Id'] = organisationId;
-				}
-
 				const normalisedBaseUrl = baseUrl.replace(/\/$/, '');
-				const requestOptions: IRequestOptions = {
+				const requestOptions: IHttpRequestOptions = {
 					method: 'GET',
 					url: `${normalisedBaseUrl}/api/statuses/statuses`,
-					headers,
 					qs: organisationId ? { organisation_id: organisationId } : undefined,
 					json: true,
 				};
 
-				this.logger.debug('immojumpTrigger.getStatuses request', {
-					url: requestOptions.url,
-					hasOrganisationId: Boolean(organisationId),
-				});
-
 				try {
-					const response = await this.helpers.request(requestOptions);
+					const response = await this.helpers.httpRequestWithAuthentication.call(
+						this as unknown as IAllExecuteFunctions,
+						'immojumpApi',
+						requestOptions,
+					);
 
 					if (Array.isArray(response)) {
 						const statuses = response.filter(isStatusResponse);
-						this.logger.debug('immojumpTrigger.getStatuses response', {
-							count: statuses.length,
-							url: requestOptions.url,
-						});
 						return statuses.map((status) => ({
 							name:
 								typeof status.name === 'string' && status.name.trim() !== ''
@@ -349,18 +313,9 @@ export class ImmojumpTrigger implements INodeType {
 						}));
 					}
 
-					this.logger.warn('immojumpTrigger.getStatuses unexpected payload', {
-						type: typeof response,
-						url: requestOptions.url,
-					});
 					return [];
 				} catch (error: unknown) {
-					const { message, statusCode } = parseErrorDetails(error);
-					this.logger.error('immojumpTrigger.getStatuses failed', {
-						message,
-						statusCode,
-						url: requestOptions.url,
-					});
+					const { message } = parseErrorDetails(error);
 					return [
 						{ name: 'Debug: API Error', value: 'error' },
 						{ name: `Debug: ${message ?? 'Unknown error'}`, value: 'debug' },
@@ -371,45 +326,30 @@ export class ImmojumpTrigger implements INodeType {
 			async getTags(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				const credentials = await this.getCredentials('immojumpApi');
 				const baseUrl = credentials.baseUrl as string;
-				const token = credentials.token as string;
 				const organisationId = credentials.organisationId as string;
 
-				const headers: Record<string, string> = {
-					Authorization: `Bearer ${token}`,
-				};
-				if (organisationId) {
-					headers['X-Organisation-Id'] = organisationId;
-				}
-
 				if (!organisationId) {
-					this.logger.error('immojumpTrigger.getTags missing organisationId');
 					return [
 						{ name: 'Debug: Missing organisation', value: 'missing_org' },
 					];
 				}
 
 				const normalisedBaseUrl = baseUrl.replace(/\/$/, '');
-				const requestOptions: IRequestOptions = {
+				const requestOptions: IHttpRequestOptions = {
 					method: 'GET',
 					url: `${normalisedBaseUrl}/api/${organisationId}/tags`,
-					headers,
 					json: true,
 				};
 
-				this.logger.debug('immojumpTrigger.getTags request', {
-					url: requestOptions.url,
-					hasOrganisationId: Boolean(organisationId),
-				});
-
 				try {
-					const response = await this.helpers.request(requestOptions);
+					const response = await this.helpers.httpRequestWithAuthentication.call(
+						this as unknown as IAllExecuteFunctions,
+						'immojumpApi',
+						requestOptions,
+					);
 
 					if (Array.isArray(response)) {
 						const tags = response.filter(isTagResponse);
-						this.logger.debug('immojumpTrigger.getTags response', {
-							count: tags.length,
-							url: requestOptions.url,
-						});
 						return tags.map((tag) => ({
 							name:
 								typeof tag.name === 'string' && tag.name.trim() !== '' ? tag.name : `Tag ${tag.id}`,
@@ -417,18 +357,9 @@ export class ImmojumpTrigger implements INodeType {
 						}));
 					}
 
-					this.logger.warn('immojumpTrigger.getTags unexpected payload', {
-						type: typeof response,
-						url: requestOptions.url,
-					});
 					return [];
 				} catch (error: unknown) {
-					const { message, statusCode } = parseErrorDetails(error);
-					this.logger.error('immojumpTrigger.getTags failed', {
-						message,
-						statusCode,
-						url: requestOptions.url,
-					});
+					const { message } = parseErrorDetails(error);
 					return [
 						{ name: 'Debug: API Error', value: 'error' },
 						{ name: `Debug: ${message ?? 'Unknown error'}`, value: 'debug' },
@@ -449,33 +380,24 @@ export class ImmojumpTrigger implements INodeType {
 
 				const credentials = await this.getCredentials('immojumpApi');
 				const baseUrl = (credentials.baseUrl as string).replace(/\/$/, '');
-				const token = credentials.token as string;
 				const organisationId = credentials.organisationId as string | undefined;
 
 				if (!organisationId) {
-					this.logger.error('immojumpTrigger.checkExists missing organisationId');
 					return false;
 				}
 
-				const headers: Record<string, string> = {
-					Authorization: `Bearer ${token}`,
-				};
-				headers['X-Organisation-Id'] = organisationId;
-
-				const requestOptions: IRequestOptions = {
+				const requestOptions: IHttpRequestOptions = {
 					method: 'GET',
 					url: `${baseUrl}/api/integrations/webhooks`,
-					headers,
 					json: true,
 				};
 
-				this.logger.debug('immojumpTrigger.checkExists request', {
-					url: requestOptions.url,
-					webhookId,
-				});
-
 				try {
-					const response = await this.helpers.request(requestOptions);
+					const response = await this.helpers.httpRequestWithAuthentication.call(
+						this as unknown as IAllExecuteFunctions,
+						'immojumpApi',
+						requestOptions,
+					);
 					const exists =
 						Array.isArray(response) &&
 						response.some(
@@ -485,15 +407,8 @@ export class ImmojumpTrigger implements INodeType {
 					if (!exists) {
 						delete staticData.webhookId;
 					}
-					this.logger.debug('immojumpTrigger.checkExists result', { webhookId, exists });
 					return exists;
-				} catch (error: unknown) {
-					const { message, statusCode, responseBody } = parseErrorDetails(error);
-					this.logger.error('immojumpTrigger.checkExists failed', {
-						message,
-						statusCode,
-						responseBody,
-					});
+				} catch {
 					return false;
 				}
 			},
@@ -501,19 +416,11 @@ export class ImmojumpTrigger implements INodeType {
 			async create(this: IHookFunctions): Promise<boolean> {
 				const credentials = await this.getCredentials('immojumpApi');
 				const baseUrl = (credentials.baseUrl as string).replace(/\/$/, '');
-				const token = credentials.token as string;
 				const organisationId = credentials.organisationId as string | undefined;
 
 				if (!organisationId) {
-					this.logger.error('immojumpTrigger.create missing organisationId');
 					return false;
 				}
-
-				const headers: Record<string, string> = {
-					Authorization: `Bearer ${token}`,
-					'Content-Type': 'application/json',
-				};
-				headers['X-Organisation-Id'] = organisationId;
 
 				const webhookUrl = this.getNodeWebhookUrl('default');
 				const events = this.getNodeParameter('events', []) as string[];
@@ -523,37 +430,27 @@ export class ImmojumpTrigger implements INodeType {
 					event_types: events,
 				};
 
-				const requestOptions: IRequestOptions = {
+				const requestOptions: IHttpRequestOptions = {
 					method: 'POST',
 					url: `${baseUrl}/api/integrations/webhooks`,
-					headers,
 					body,
 					json: true,
 				};
 
-				this.logger.debug('immojumpTrigger.create request', {
-					url: requestOptions.url,
-					events,
-					webhookUrl,
-				});
-
 				try {
-					const response = await this.helpers.request(requestOptions);
+					const response = await this.helpers.httpRequestWithAuthentication.call(
+						this as unknown as IAllExecuteFunctions,
+						'immojumpApi',
+						requestOptions,
+					);
 					const webhookId = extractId(response);
 					if (webhookId) {
 						const staticData = this.getWorkflowStaticData('node');
 						staticData.webhookId = webhookId;
-						this.logger.debug('immojumpTrigger.create success', { webhookId });
 						return true;
 					}
-					this.logger.warn('immojumpTrigger.create missing webhook id in response');
-				} catch (error: unknown) {
-					const { message, statusCode, responseBody } = parseErrorDetails(error);
-					this.logger.error('immojumpTrigger.create failed', {
-						message,
-						statusCode,
-						responseBody,
-					});
+				} catch {
+					return false;
 				}
 
 				return false;
@@ -568,47 +465,32 @@ export class ImmojumpTrigger implements INodeType {
 
 				const credentials = await this.getCredentials('immojumpApi');
 				const baseUrl = (credentials.baseUrl as string).replace(/\/$/, '');
-				const token = credentials.token as string;
 				const organisationId = credentials.organisationId as string | undefined;
 
 				if (!organisationId) {
-					this.logger.error('immojumpTrigger.delete missing organisationId');
 					return false;
 				}
 
-				const headers: Record<string, string> = {
-					Authorization: `Bearer ${token}`,
-				};
-				headers['X-Organisation-Id'] = organisationId;
-
-				const requestOptions: IRequestOptions = {
+				const requestOptions: IHttpRequestOptions = {
 					method: 'DELETE',
 					url: `${baseUrl}/api/integrations/webhooks/${webhookId}`,
-					headers,
 					json: true,
 				};
 
-				this.logger.debug('immojumpTrigger.delete request', {
-					url: requestOptions.url,
-					webhookId,
-				});
-
 				try {
-					await this.helpers.request(requestOptions);
+					await this.helpers.httpRequestWithAuthentication.call(
+						this as unknown as IAllExecuteFunctions,
+						'immojumpApi',
+						requestOptions,
+					);
 					delete staticData.webhookId;
-					this.logger.debug('immojumpTrigger.delete success', { webhookId });
 					return true;
 				} catch (error: unknown) {
-					const { message, statusCode, responseBody } = parseErrorDetails(error);
+					const { statusCode } = parseErrorDetails(error);
 					if (statusCode === 404) {
 						delete staticData.webhookId;
 						return true;
 					}
-					this.logger.error('immojumpTrigger.delete failed', {
-						message,
-						statusCode,
-						responseBody,
-					});
 					return false;
 				}
 			},
