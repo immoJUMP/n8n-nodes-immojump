@@ -4,119 +4,65 @@ const showOnlyForContact = {
 	resource: ['contact'],
 };
 
-const resolveExpressionValueSnippet = `
-	const resolveValue = (value) => {
-		if (value === undefined || value === null) {
-			return undefined;
-		}
-		if (typeof value !== 'string') {
-			return value;
-		}
-		const trimmed = value.trim();
-		if (trimmed === '') {
-			return undefined;
-		}
-		if (trimmed.startsWith('={{') || trimmed.startsWith('{{')) {
-			try {
-				return $evaluateExpression(trimmed);
-			} catch (error) {
-				return trimmed;
-			}
-		}
-		return trimmed;
-	};
-
-	const resolveStringValue = (value) => {
-		const resolved = resolveValue(value);
-		if (resolved === undefined || resolved === null) {
-			return undefined;
-		}
-		const stringValue = String(resolved).trim();
-		return stringValue === '' ? undefined : stringValue;
-	};
-
-	const resolveEmailValue = (value) => {
-		const resolved = resolveStringValue(value);
-		if (!resolved) {
-			return undefined;
-		}
-		return resolved.replace(/^=/, '');
-	};
-`;
-
 const contactCreateBodyExpression = `={{ (() => {
-${resolveExpressionValueSnippet}
-	const payload = {
+	const body = {
 		first_name: $parameter.firstName,
 		last_name: $parameter.lastName,
 		organisation_id: $credentials.organisationId,
 	};
-	const fields = $parameter.additionalFields ?? {};
 
-	const email = resolveEmailValue(fields.email);
-	if (email !== undefined) {
-		payload.email = email;
+	const additional = $parameter.additionalFields ?? {};
+	const email = $parameter.email ?? additional.email;
+	if (email !== undefined && email !== '') {
+		body.email = String(email).replace(/^=/, '').trim();
 	}
-	const phone = resolveStringValue(fields.phone);
-	if (phone !== undefined) {
-		payload.phone = phone;
+	if (additional.phone !== undefined && additional.phone !== '') {
+		body.phone = additional.phone;
 	}
-	const mobile = resolveStringValue(fields.mobile);
-	if (mobile !== undefined) {
-		payload.mobile = mobile;
+	if (additional.mobile !== undefined && additional.mobile !== '') {
+		body.mobile = additional.mobile;
 	}
-	const address = resolveStringValue(fields.address);
-	if (address !== undefined) {
-		payload.address = address;
+	if (additional.address !== undefined && additional.address !== '') {
+		body.address = additional.address;
 	}
-	const role = resolveStringValue(fields.role);
-	if (role !== undefined) {
-		payload.role = role;
+	if (additional.role !== undefined && additional.role !== '') {
+		body.role = additional.role;
 	}
-	const company = resolveStringValue(fields.company);
-	if (company !== undefined) {
-		payload.company = company;
+	if (additional.company !== undefined && additional.company !== '') {
+		body.company = additional.company;
 	}
 
-	return payload;
+	return body;
 })() }}`;
 
 const contactUpdateBodyExpression = `={{ (() => {
-${resolveExpressionValueSnippet}
 	const payload = {};
 	const fields = $parameter.updateFields ?? {};
 
-	const firstName = resolveStringValue(fields.firstName);
-	if (firstName !== undefined) {
-		payload.first_name = firstName;
+	if (fields.firstName !== undefined && fields.firstName !== '') {
+		payload.first_name = fields.firstName;
 	}
-	const lastName = resolveStringValue(fields.lastName);
-	if (lastName !== undefined) {
-		payload.last_name = lastName;
+	if (fields.lastName !== undefined && fields.lastName !== '') {
+		payload.last_name = fields.lastName;
 	}
-	const email = resolveEmailValue(fields.email);
-	if (email !== undefined) {
-		payload.email = email;
+	const email = $parameter.email ?? fields.email;
+	if (email !== undefined && email !== '') {
+		payload.email = String(email).replace(/^=/, '').trim();
 	}
-	const phone = resolveStringValue(fields.phone);
-	if (phone !== undefined) {
-		payload.phone = phone;
+	if (fields.phone !== undefined && fields.phone !== '') {
+		payload.phone = fields.phone;
 	}
-	const mobile = resolveStringValue(fields.mobile);
-	if (mobile !== undefined) {
-		payload.mobile = mobile;
+	if (fields.mobile !== undefined && fields.mobile !== '') {
+		payload.mobile = fields.mobile;
 	}
-	const address = resolveStringValue(fields.address);
-	if (address !== undefined) {
-		payload.address = address;
+	if (fields.address !== undefined && fields.address !== '') {
+		payload.address = fields.address;
 	}
-	const role = resolveStringValue(fields.role);
-	if (role !== undefined) {
-		payload.role = role;
+	if (fields.role !== undefined && fields.role !== '') {
+		payload.role = fields.role;
 	}
-	const company = resolveStringValue(fields.company);
-	if (company !== undefined) {
-		payload.company = company;
+	if (fields.company !== undefined && fields.company !== '') {
+		payload.company = fields.company;
 	}
 
 	return payload;
@@ -325,6 +271,21 @@ export const contactDescription: INodeProperties[] = [
 			},
 		},
 		default: '',
+	},
+	{
+		displayName: 'Email (Expression)',
+		name: 'email',
+		type: 'string',
+		default: '',
+		placeholder: 'name@email.com',
+		description:
+			'Use this field when you need expressions. It overrides Additional Fields / Update Fields Email.',
+		displayOptions: {
+			show: {
+				...showOnlyForContact,
+				operation: ['create', 'update'],
+			},
+		},
 	},
 	{
 		displayName: 'Additional Fields',
