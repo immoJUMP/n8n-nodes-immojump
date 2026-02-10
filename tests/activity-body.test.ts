@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { buildActivityCreateBody, buildActivityUpdateBody } from '../nodes/Immojump/resources/activity/index';
 
+const globalAny = globalThis as typeof globalThis & {
+	$evaluateExpression?: (expression: string) => unknown;
+};
+
 describe('buildActivityCreateBody', () => {
 	it('maps all fields and applies overrides', () => {
 		const body = buildActivityCreateBody(
@@ -44,6 +48,79 @@ describe('buildActivityCreateBody', () => {
 			contact_ids: ['c3'],
 		});
 	});
+
+	it('evaluates expressions and uses credential organisation id', () => {
+		globalAny.$evaluateExpression = (expr: string) => {
+			const map: Record<string, unknown> = {
+				desc: 'Resolved Description',
+				imm: 'imm-9',
+				contacts: ['c9', 'c10'],
+			};
+			return map[expr] ?? `unknown:${expr}`;
+		};
+
+		const body = buildActivityCreateBody(
+			{
+				title: 'Task',
+				type: 'ANRUF',
+				status: 'Geplant',
+				priority: 'NA',
+				descriptionExpression: '=fallback',
+				immobilienId: '=imm',
+				organisationId: 'org-param',
+				additionalFields: {
+					description: '=desc',
+					contactIds: '=contacts',
+				},
+			},
+			{ organisationId: 'org-cred' },
+		);
+
+		delete globalAny.$evaluateExpression;
+
+		expect(body).toEqual({
+			title: 'Task',
+			type: 'ANRUF',
+			status: 'Geplant',
+			priority: 'NA',
+			description: 'Resolved Description',
+			immobilien_id: 'imm-9',
+			organisation_id: 'org-cred',
+			contact_ids: ['c9', 'c10'],
+		});
+	});
+
+	it('throws on invalid contactIds JSON', () => {
+		expect(() =>
+			buildActivityCreateBody(
+				{
+					title: 'Bad',
+					type: 'ANRUF',
+					status: 'Geplant',
+					priority: 'NA',
+					additionalFields: {
+						contactIds: '{bad',
+					},
+				},
+				{ organisationId: 'org-1' },
+			),
+		).toThrow('contactIds must be valid JSON');
+	});
+
+	it('throws on invalid additionalFieldsExpression JSON', () => {
+		expect(() =>
+			buildActivityCreateBody(
+				{
+					title: 'Bad',
+					type: 'ANRUF',
+					status: 'Geplant',
+					priority: 'NA',
+					additionalFieldsExpression: '{bad',
+				},
+				{ organisationId: 'org-1' },
+			),
+		).toThrow('additionalFieldsExpression must be valid JSON');
+	});
 });
 
 describe('buildActivityUpdateBody', () => {
@@ -84,5 +161,23 @@ describe('buildActivityUpdateBody', () => {
 			immobilien_id: 'imm-2',
 			contact_ids: ['c6'],
 		});
+	});
+
+	it('throws on invalid contactIds for update', () => {
+		expect(() =>
+			buildActivityUpdateBody({
+				updateFields: {
+					contactIds: '{"not":"array"}',
+				},
+			}),
+		).toThrow('contactIds must be an array');
+	});
+
+	it('throws on invalid updateFieldsExpression JSON', () => {
+		expect(() =>
+			buildActivityUpdateBody({
+				updateFieldsExpression: '{bad',
+			}),
+		).toThrow('updateFieldsExpression must be valid JSON');
 	});
 });

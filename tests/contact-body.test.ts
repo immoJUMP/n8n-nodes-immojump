@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { buildContactCreateBody, buildContactUpdateBody } from '../nodes/Immojump/resources/contact/index';
 
+const globalAny = globalThis as typeof globalThis & {
+	$evaluateExpression?: (expression: string) => unknown;
+};
+
 describe('buildContactCreateBody', () => {
 	it('maps all fields and sanitizes email', () => {
 		const body = buildContactCreateBody(
@@ -30,6 +34,52 @@ describe('buildContactCreateBody', () => {
 			role: 'Owner',
 			company: 'Acme',
 		});
+	});
+
+	it('evaluates expressions in fields', () => {
+		globalAny.$evaluateExpression = (expr: string) => {
+			const map: Record<string, string> = {
+				first: 'Alice',
+				emailExpr: 'alice@example.com',
+				phoneExpr: '555',
+			};
+			return map[expr] ?? `unknown:${expr}`;
+		};
+
+		const body = buildContactCreateBody(
+			{
+				firstName: '=first',
+				lastName: 'Smith',
+				email: '=emailExpr',
+				additionalFields: {
+					phone: '=phoneExpr',
+				},
+			},
+			{ organisationId: 'org-3' },
+		);
+
+		delete globalAny.$evaluateExpression;
+
+		expect(body).toEqual({
+			first_name: 'Alice',
+			last_name: 'Smith',
+			organisation_id: 'org-3',
+			email: 'alice@example.com',
+			phone: '555',
+		});
+	});
+
+	it('throws when additionalFieldsExpression is invalid JSON', () => {
+		expect(() =>
+			buildContactCreateBody(
+				{
+					firstName: 'Bad',
+					lastName: 'Json',
+					additionalFieldsExpression: '{',
+				},
+				{ organisationId: 'org-4' },
+			),
+		).toThrow('additionalFieldsExpression must be valid JSON');
 	});
 
 	it('overrides additional fields via expression JSON', () => {
@@ -93,5 +143,42 @@ describe('buildContactUpdateBody', () => {
 			role: 'Role',
 			company: 'OverrideCo',
 		});
+	});
+
+	it('evaluates expressions for update fields', () => {
+		globalAny.$evaluateExpression = (expr: string) => {
+			const map: Record<string, string> = {
+				first: 'Bob',
+				last: 'Jones',
+				emailExpr: 'bob@example.com',
+			};
+			return map[expr] ?? `unknown:${expr}`;
+		};
+
+		const body = buildContactUpdateBody({
+			email: '=emailExpr',
+			updateFields: {
+				firstName: '=first',
+				lastName: '=last',
+				phone: '123',
+			},
+		});
+
+		delete globalAny.$evaluateExpression;
+
+		expect(body).toEqual({
+			first_name: 'Bob',
+			last_name: 'Jones',
+			email: 'bob@example.com',
+			phone: '123',
+		});
+	});
+
+	it('throws when updateFieldsExpression is invalid JSON', () => {
+		expect(() =>
+			buildContactUpdateBody({
+				updateFieldsExpression: '{bad',
+			}),
+		).toThrow('updateFieldsExpression must be valid JSON');
 	});
 });
