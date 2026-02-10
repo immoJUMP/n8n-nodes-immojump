@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.1](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.11.0...v1.11.1) (2026-02-10)
+
+
+### Bug Fixes
+
+* **README:** remove version history section ([6694e96](https://github.com/immoJUMP/n8n-nodes-immojump/commit/6694e962df801e525ca2db2c9b01a6e17fd56c08))
+
 ## [1.11.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.10.0...v1.11.0) (2026-02-10)
 
 
