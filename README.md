@@ -81,6 +81,3 @@ _By the time users are looking for community nodes, they probably already know n
 * [n8n community nodes documentation](https://docs.n8n.io/integrations/#community-nodes)
 * [ImmoJump API documentation](https://docs.immojump.com/)
 
-## Version history
-
-_This is another optional section. If your node has multiple versions, include a short description of available versions and what changed, as well as any compatibility impact._
