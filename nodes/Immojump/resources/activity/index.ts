@@ -4,48 +4,76 @@ const showOnlyForActivity = {
 	resource: ['activity'],
 };
 
-const activityCreateBodyExpression = `={{ (() => {
-	const body = {
-		title: $parameter.title,
-		type: $parameter.type,
-		status: $parameter.status,
-		priority: $parameter.priority,
+export const buildActivityCreateBody = (
+	parameter: Record<string, unknown>,
+	credentials: Record<string, unknown>,
+) => {
+	const parseObject = (value: unknown, fieldName: string) => {
+		if (value === undefined || value === null || value === '') {
+			return undefined;
+		}
+		if (typeof value === 'string') {
+			const trimmed = value.trim();
+			if (trimmed === '') {
+				return undefined;
+			}
+			try {
+				return JSON.parse(trimmed);
+			} catch (error) {
+				throw new Error(`${fieldName} must be valid JSON`);
+			}
+		}
+		if (typeof value === 'object') {
+			return value;
+		}
+		throw new Error(`${fieldName} must be an object or JSON string`);
 	};
 
-	const optional = $parameter.additionalFields ?? {};
+	const pickValue = (primary: unknown, fallback: unknown) =>
+		primary === undefined || primary === null || primary === '' ? fallback : primary;
 
-	const description =
-		$parameter.descriptionExpression !== undefined && $parameter.descriptionExpression !== ''
-			? $parameter.descriptionExpression
-			: optional.description;
+	const body: Record<string, unknown> = {
+		title: parameter.title,
+		type: parameter.type,
+		status: parameter.status,
+		priority: parameter.priority,
+	};
+
+	const additional = (parameter.additionalFields as Record<string, unknown>) ?? {};
+	const overrides = parseObject(parameter.additionalFieldsExpression, 'additionalFieldsExpression') as
+		| Record<string, unknown>
+		| undefined;
+	const merged = overrides ? { ...additional, ...overrides } : additional;
+
+	const description = pickValue(parameter.descriptionExpression, merged.description);
 	if (description !== undefined && description !== '') {
 		body.description = description;
 	}
-	if (optional.scheduledStart) {
-		body.scheduled_start = optional.scheduledStart;
+	if (merged.scheduledStart) {
+		body.scheduled_start = merged.scheduledStart;
 	}
-	if (optional.scheduledEnd) {
-		body.scheduled_end = optional.scheduledEnd;
+	if (merged.scheduledEnd) {
+		body.scheduled_end = merged.scheduledEnd;
 	}
-	if (optional.actualStart) {
-		body.actual_start = optional.actualStart;
+	if (merged.actualStart) {
+		body.actual_start = merged.actualStart;
 	}
-	if (optional.actualEnd) {
-		body.actual_end = optional.actualEnd;
+	if (merged.actualEnd) {
+		body.actual_end = merged.actualEnd;
 	}
-	if (optional.assignedToId) {
-		body.assigned_to_id = optional.assignedToId;
+	if (merged.assignedToId) {
+		body.assigned_to_id = merged.assignedToId;
 	}
-	if ($parameter.immobilienId) {
-		body.immobilien_id = $parameter.immobilienId;
+	if (parameter.immobilienId) {
+		body.immobilien_id = parameter.immobilienId;
 	}
 
-	const organisationId = $parameter.organisationId || $credentials.organisationId;
+	const organisationId = pickValue(parameter.organisationId, credentials.organisationId);
 	if (organisationId) {
 		body.organisation_id = organisationId;
 	}
 
-	const rawContactIds = optional.contactIds;
+	const rawContactIds = merged.contactIds;
 	if (rawContactIds !== undefined && rawContactIds !== '' && rawContactIds !== null) {
 		let parsedContactIds = rawContactIds;
 		if (typeof rawContactIds === 'string') {
@@ -63,54 +91,80 @@ const activityCreateBodyExpression = `={{ (() => {
 	}
 
 	return body;
-})() }}`;
+};
 
-const activityUpdateBodyExpression = `={{ (() => {
-	const payload = {};
-	const fields = $parameter.updateFields ?? {};
+export const buildActivityUpdateBody = (parameter: Record<string, unknown>) => {
+	const parseObject = (value: unknown, fieldName: string) => {
+		if (value === undefined || value === null || value === '') {
+			return undefined;
+		}
+		if (typeof value === 'string') {
+			const trimmed = value.trim();
+			if (trimmed === '') {
+				return undefined;
+			}
+			try {
+				return JSON.parse(trimmed);
+			} catch (error) {
+				throw new Error(`${fieldName} must be valid JSON`);
+			}
+		}
+		if (typeof value === 'object') {
+			return value;
+		}
+		throw new Error(`${fieldName} must be an object or JSON string`);
+	};
 
-	if (fields.title !== undefined) {
-		payload.title = fields.title;
+	const pickValue = (primary: unknown, fallback: unknown) =>
+		primary === undefined || primary === null || primary === '' ? fallback : primary;
+
+	const payload: Record<string, unknown> = {};
+	const fields = (parameter.updateFields as Record<string, unknown>) ?? {};
+	const overrides = parseObject(parameter.updateFieldsExpression, 'updateFieldsExpression') as
+		| Record<string, unknown>
+		| undefined;
+	const merged = overrides ? { ...fields, ...overrides } : fields;
+
+	if (merged.title !== undefined) {
+		payload.title = merged.title;
 	}
-	if (fields.type !== undefined) {
-		payload.type = fields.type;
+	if (merged.type !== undefined) {
+		payload.type = merged.type;
 	}
-	if (fields.status !== undefined) {
-		payload.status = fields.status;
+	if (merged.status !== undefined) {
+		payload.status = merged.status;
 	}
-	if (fields.priority !== undefined) {
-		payload.priority = fields.priority;
+	if (merged.priority !== undefined) {
+		payload.priority = merged.priority;
 	}
-	const description =
-		$parameter.descriptionExpression !== undefined && $parameter.descriptionExpression !== ''
-			? $parameter.descriptionExpression
-			: fields.description;
+
+	const description = pickValue(parameter.descriptionExpression, merged.description);
 	if (description !== undefined && description !== '') {
 		payload.description = description;
 	}
-	if (fields.scheduledStart !== undefined) {
-		payload.scheduled_start = fields.scheduledStart;
+	if (merged.scheduledStart !== undefined) {
+		payload.scheduled_start = merged.scheduledStart;
 	}
-	if (fields.scheduledEnd !== undefined) {
-		payload.scheduled_end = fields.scheduledEnd;
+	if (merged.scheduledEnd !== undefined) {
+		payload.scheduled_end = merged.scheduledEnd;
 	}
-	if (fields.actualStart !== undefined) {
-		payload.actual_start = fields.actualStart;
+	if (merged.actualStart !== undefined) {
+		payload.actual_start = merged.actualStart;
 	}
-	if (fields.actualEnd !== undefined) {
-		payload.actual_end = fields.actualEnd;
+	if (merged.actualEnd !== undefined) {
+		payload.actual_end = merged.actualEnd;
 	}
-	if (fields.assignedToId !== undefined) {
-		payload.assigned_to_id = fields.assignedToId;
+	if (merged.assignedToId !== undefined) {
+		payload.assigned_to_id = merged.assignedToId;
 	}
-	if (fields.immobilienId !== undefined) {
-		payload.immobilien_id = fields.immobilienId || null;
+	if (merged.immobilienId !== undefined) {
+		payload.immobilien_id = merged.immobilienId || null;
 	}
-	if (fields.contactIds !== undefined && fields.contactIds !== '' && fields.contactIds !== null) {
-		let parsedContactIds = fields.contactIds;
-		if (typeof fields.contactIds === 'string') {
+	if (merged.contactIds !== undefined && merged.contactIds !== '' && merged.contactIds !== null) {
+		let parsedContactIds = merged.contactIds;
+		if (typeof merged.contactIds === 'string') {
 			try {
-				parsedContactIds = JSON.parse(fields.contactIds);
+				parsedContactIds = JSON.parse(merged.contactIds);
 			} catch (error) {
 				throw new Error('contactIds must be valid JSON (e.g. ["uuid1","uuid2"])');
 			}
@@ -123,7 +177,10 @@ const activityUpdateBodyExpression = `={{ (() => {
 	}
 
 	return payload;
-})() }}`;
+};
+
+const activityCreateBodyExpression = `={{ (${buildActivityCreateBody.toString()})($parameter, $credentials) }}`;
+const activityUpdateBodyExpression = `={{ (${buildActivityUpdateBody.toString()})($parameter) }}`;
 
 export const activityDescription: INodeProperties[] = [
 	{
@@ -529,6 +586,20 @@ export const activityDescription: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Additional Fields (Expression JSON)',
+		name: 'additionalFieldsExpression',
+		type: 'json',
+		default: '',
+		description:
+			'Optional JSON object to override Additional Fields. Useful when you need expressions for nested fields.',
+		displayOptions: {
+			show: {
+				...showOnlyForActivity,
+				operation: ['create'],
+			},
+		},
+	},
+	{
 		displayName: 'Additional Fields',
 		name: 'additionalFields',
 		type: 'collection',
@@ -589,6 +660,20 @@ export const activityDescription: INodeProperties[] = [
 				default: '',
 			},
 		],
+	},
+	{
+		displayName: 'Update Fields (Expression JSON)',
+		name: 'updateFieldsExpression',
+		type: 'json',
+		default: '',
+		description:
+			'Optional JSON object to override Update Fields. Useful when you need expressions for nested fields.',
+		displayOptions: {
+			show: {
+				...showOnlyForActivity,
+				operation: ['update'],
+			},
+		},
 	},
 	{
 		displayName: 'Update Fields',

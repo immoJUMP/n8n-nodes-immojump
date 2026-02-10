@@ -12,32 +12,60 @@ const immobilieTypeOptions = [
 	{ name: 'Sonstiges', value: 'Sonstiges' },
 ];
 
-const createBodyExpression = `={{ (() => {
-	const body = {
-		type: $parameter.type,
-		name: $parameter.name,
-		organisation_id: $credentials.organisationId,
+export const buildImmobilieCreateBody = (
+	parameter: Record<string, unknown>,
+	credentials: Record<string, unknown>,
+) => {
+	const parseObject = (value: unknown, fieldName: string) => {
+		if (value === undefined || value === null || value === '') {
+			return undefined;
+		}
+		if (typeof value === 'string') {
+			const trimmed = value.trim();
+			if (trimmed === '') {
+				return undefined;
+			}
+			try {
+				return JSON.parse(trimmed);
+			} catch (error) {
+				throw new Error(`${fieldName} must be valid JSON`);
+			}
+		}
+		if (typeof value === 'object') {
+			return value;
+		}
+		throw new Error(`${fieldName} must be an object or JSON string`);
 	};
-	const additional = $parameter.additionalFields ?? {};
-	const daten = {};
 
-	if (additional.adresse) {
-		daten.adresse = additional.adresse;
+	const body: Record<string, unknown> = {
+		type: parameter.type,
+		name: parameter.name,
+		organisation_id: credentials.organisationId,
+	};
+	const additional = (parameter.additionalFields as Record<string, unknown>) ?? {};
+	const overrides = parseObject(parameter.additionalFieldsExpression, 'additionalFieldsExpression') as
+		| Record<string, unknown>
+		| undefined;
+	const merged = overrides ? { ...additional, ...overrides } : additional;
+	const daten: Record<string, unknown> = {};
+
+	if (merged.adresse) {
+		daten.adresse = merged.adresse;
 	}
-	if (additional.kaufpreis !== undefined) {
-		daten.kaufpreis = additional.kaufpreis;
+	if (merged.kaufpreis !== undefined) {
+		daten.kaufpreis = merged.kaufpreis;
 	}
-	if (additional.flaeche !== undefined) {
-		daten.wohnflaeche = additional.flaeche;
+	if (merged.flaeche !== undefined) {
+		daten.wohnflaeche = merged.flaeche;
 	}
-	if (additional.baujahr !== undefined) {
-		daten.baujahr = additional.baujahr;
+	if (merged.baujahr !== undefined) {
+		daten.baujahr = merged.baujahr;
 	}
-	if (additional.zustand) {
-		daten.zustand = additional.zustand;
+	if (merged.zustand) {
+		daten.zustand = merged.zustand;
 	}
-	if (additional.datenJson) {
-		const raw = additional.datenJson;
+	if (merged.datenJson) {
+		const raw = merged.datenJson;
 		const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
 		if (parsed && typeof parsed === 'object') {
 			Object.assign(daten, parsed);
@@ -49,20 +77,45 @@ const createBodyExpression = `={{ (() => {
 	}
 
 	return body;
-})() }}`;
+};
 
-const updateBodyExpression = `={{ (() => {
-	const payload = {};
-	const fields = $parameter.updateFields ?? {};
+export const buildImmobilieUpdateBody = (parameter: Record<string, unknown>) => {
+	const parseObject = (value: unknown, fieldName: string) => {
+		if (value === undefined || value === null || value === '') {
+			return undefined;
+		}
+		if (typeof value === 'string') {
+			const trimmed = value.trim();
+			if (trimmed === '') {
+				return undefined;
+			}
+			try {
+				return JSON.parse(trimmed);
+			} catch (error) {
+				throw new Error(`${fieldName} must be valid JSON`);
+			}
+		}
+		if (typeof value === 'object') {
+			return value;
+		}
+		throw new Error(`${fieldName} must be an object or JSON string`);
+	};
 
-	if (fields.name) {
-		payload.name = fields.name;
+	const payload: Record<string, unknown> = {};
+	const fields = (parameter.updateFields as Record<string, unknown>) ?? {};
+	const overrides = parseObject(parameter.updateFieldsExpression, 'updateFieldsExpression') as
+		| Record<string, unknown>
+		| undefined;
+	const merged = overrides ? { ...fields, ...overrides } : fields;
+
+	if (merged.name) {
+		payload.name = merged.name;
 	}
-	if (fields.type) {
-		payload.type = fields.type;
+	if (merged.type) {
+		payload.type = merged.type;
 	}
 
-	const numericMappings = [
+	const numericMappings: Array<[string, string]> = [
 		['acquisitionPrice', 'acquisition_price'],
 		['salePrice', 'sale_price'],
 		['askingPrice', 'asking_price'],
@@ -70,48 +123,51 @@ const updateBodyExpression = `={{ (() => {
 	];
 
 	for (const [sourceKey, targetKey] of numericMappings) {
-		const value = fields[sourceKey];
+		const value = merged[sourceKey];
 		if (value !== undefined) {
 			payload[targetKey] = value;
 		}
 	}
 
-	if (fields.previewImageId !== undefined) {
-		payload.preview_image_id = fields.previewImageId || null;
+	if (merged.previewImageId !== undefined) {
+		payload.preview_image_id = merged.previewImageId || null;
 	}
 
-	const daten = {};
-	if (fields.adresse) {
-		daten.adresse = fields.adresse;
+	const daten: Record<string, unknown> = {};
+	if (merged.adresse) {
+		daten.adresse = merged.adresse;
 	}
-	if (fields.kaufpreis !== undefined) {
-		daten.kaufpreis = fields.kaufpreis;
+	if (merged.kaufpreis !== undefined) {
+		daten.kaufpreis = merged.kaufpreis;
 	}
-	if (fields.flaeche !== undefined) {
-		daten.wohnflaeche = fields.flaeche;
+	if (merged.flaeche !== undefined) {
+		daten.wohnflaeche = merged.flaeche;
 	}
-	if (fields.baujahr !== undefined) {
-		daten.baujahr = fields.baujahr;
+	if (merged.baujahr !== undefined) {
+		daten.baujahr = merged.baujahr;
 	}
-	if (fields.zustand) {
-		daten.zustand = fields.zustand;
+	if (merged.zustand) {
+		daten.zustand = merged.zustand;
 	}
-	if (fields.datenJson) {
-		const raw = fields.datenJson;
+	if (merged.datenJson) {
+		const raw = merged.datenJson;
 		const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
 		if (parsed && typeof parsed === 'object') {
 			Object.assign(daten, parsed);
 		}
 	}
 
-	if (fields.resetDaten === true) {
+	if (merged.resetDaten === true) {
 		payload.daten = {};
 	} else if (Object.keys(daten).length > 0) {
 		payload.daten = daten;
 	}
 
 	return payload;
-})() }}`;
+};
+
+const createBodyExpression = `={{ (${buildImmobilieCreateBody.toString()})($parameter, $credentials) }}`;
+const updateBodyExpression = `={{ (${buildImmobilieUpdateBody.toString()})($parameter) }}`;
 
 const createResourceLinkBodyExpression = `={{ (() => {
 	const body = {
@@ -416,6 +472,20 @@ export const immobilieDescription: INodeProperties[] = [
 		default: 'ETW',
 	},
 	{
+		displayName: 'Additional Fields (Expression JSON)',
+		name: 'additionalFieldsExpression',
+		type: 'json',
+		default: '',
+		description:
+			'Optional JSON object to override Additional Fields. Useful when you need expressions for nested fields.',
+		displayOptions: {
+			show: {
+				...showOnlyForImmobilie,
+				operation: ['create'],
+			},
+		},
+	},
+	{
 		displayName: 'Additional Fields',
 		name: 'additionalFields',
 		type: 'collection',
@@ -466,6 +536,20 @@ export const immobilieDescription: INodeProperties[] = [
 				default: '',
 			},
 		],
+	},
+	{
+		displayName: 'Update Fields (Expression JSON)',
+		name: 'updateFieldsExpression',
+		type: 'json',
+		default: '',
+		description:
+			'Optional JSON object to override Update Fields. Useful when you need expressions for nested fields.',
+		displayOptions: {
+			show: {
+				...showOnlyForImmobilie,
+				operation: ['update'],
+			},
+		},
 	},
 	{
 		displayName: 'Update Fields',

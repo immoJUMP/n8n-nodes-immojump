@@ -4,55 +4,160 @@ const showOnlyForContact = {
 	resource: ['contact'],
 };
 
-export const sanitizeEmail = (value: unknown): string | undefined => {
-	if (value === undefined || value === null) {
-		return undefined;
+export const buildContactCreateBody = (
+	parameter: Record<string, unknown>,
+	credentials: Record<string, unknown>,
+) => {
+	const sanitizeEmail = (value: unknown): string | undefined => {
+		if (value === undefined || value === null) {
+			return undefined;
+		}
+		const trimmed = String(value).trim();
+		if (trimmed === '') {
+			return undefined;
+		}
+		const cleaned = trimmed.replace(/^=/, '');
+		return cleaned === '' ? undefined : cleaned;
+	};
+
+	const parseObject = (value: unknown, fieldName: string) => {
+		if (value === undefined || value === null || value === '') {
+			return undefined;
+		}
+		if (typeof value === 'string') {
+			const trimmed = value.trim();
+			if (trimmed === '') {
+				return undefined;
+			}
+			try {
+				return JSON.parse(trimmed);
+			} catch (error) {
+				throw new Error(`${fieldName} must be valid JSON`);
+			}
+		}
+		if (typeof value === 'object') {
+			return value;
+		}
+		throw new Error(`${fieldName} must be an object or JSON string`);
+	};
+
+	const pickValue = (primary: unknown, fallback: unknown) =>
+		primary === undefined || primary === null || primary === '' ? fallback : primary;
+
+	const additional = (parameter.additionalFields as Record<string, unknown>) ?? {};
+	const overrides = parseObject(parameter.additionalFieldsExpression, 'additionalFieldsExpression') as
+		| Record<string, unknown>
+		| undefined;
+	const merged = overrides ? { ...additional, ...overrides } : additional;
+
+	const body: Record<string, unknown> = {
+		first_name: parameter.firstName,
+		last_name: parameter.lastName,
+		organisation_id: credentials.organisationId,
+	};
+
+	const emailValue = pickValue(parameter.email, merged.email);
+	const email = sanitizeEmail(emailValue);
+	if (email !== undefined) {
+		body.email = email;
 	}
-	const trimmed = String(value).trim();
-	if (trimmed === '') {
-		return undefined;
+	if (merged.phone !== undefined && merged.phone !== '') {
+		body.phone = merged.phone;
 	}
-	const cleaned = trimmed.replace(/^=/, '');
-	return cleaned === '' ? undefined : cleaned;
+	if (merged.mobile !== undefined && merged.mobile !== '') {
+		body.mobile = merged.mobile;
+	}
+	if (merged.address !== undefined && merged.address !== '') {
+		body.address = merged.address;
+	}
+	if (merged.role !== undefined && merged.role !== '') {
+		body.role = merged.role;
+	}
+	if (merged.company !== undefined && merged.company !== '') {
+		body.company = merged.company;
+	}
+
+	return body;
 };
 
-const sanitizeEmailExpression = sanitizeEmail.toString();
-const contactCreateEmailExpression = `={{ (${sanitizeEmailExpression})($parameter.email || $parameter.additionalFields?.email) }}`;
+export const buildContactUpdateBody = (parameter: Record<string, unknown>) => {
+	const sanitizeEmail = (value: unknown): string | undefined => {
+		if (value === undefined || value === null) {
+			return undefined;
+		}
+		const trimmed = String(value).trim();
+		if (trimmed === '') {
+			return undefined;
+		}
+		const cleaned = trimmed.replace(/^=/, '');
+		return cleaned === '' ? undefined : cleaned;
+	};
 
-const contactUpdateBodyExpression = `={{ (() => {
-	const sanitizeEmail = ${sanitizeEmailExpression};
-	const payload = {};
-	const fields = $parameter.updateFields ?? {};
+	const parseObject = (value: unknown, fieldName: string) => {
+		if (value === undefined || value === null || value === '') {
+			return undefined;
+		}
+		if (typeof value === 'string') {
+			const trimmed = value.trim();
+			if (trimmed === '') {
+				return undefined;
+			}
+			try {
+				return JSON.parse(trimmed);
+			} catch (error) {
+				throw new Error(`${fieldName} must be valid JSON`);
+			}
+		}
+		if (typeof value === 'object') {
+			return value;
+		}
+		throw new Error(`${fieldName} must be an object or JSON string`);
+	};
 
-	if (fields.firstName !== undefined && fields.firstName !== '') {
-		payload.first_name = fields.firstName;
+	const pickValue = (primary: unknown, fallback: unknown) =>
+		primary === undefined || primary === null || primary === '' ? fallback : primary;
+
+	const fields = (parameter.updateFields as Record<string, unknown>) ?? {};
+	const overrides = parseObject(parameter.updateFieldsExpression, 'updateFieldsExpression') as
+		| Record<string, unknown>
+		| undefined;
+	const merged = overrides ? { ...fields, ...overrides } : fields;
+
+	const payload: Record<string, unknown> = {};
+
+	if (merged.firstName !== undefined && merged.firstName !== '') {
+		payload.first_name = merged.firstName;
 	}
-	if (fields.lastName !== undefined && fields.lastName !== '') {
-		payload.last_name = fields.lastName;
+	if (merged.lastName !== undefined && merged.lastName !== '') {
+		payload.last_name = merged.lastName;
 	}
-	const email = $parameter.email || fields.email;
-	const cleanedEmail = sanitizeEmail(email);
-	if (cleanedEmail) {
-		payload.email = cleanedEmail;
+
+	const emailValue = pickValue(parameter.email, merged.email);
+	const email = sanitizeEmail(emailValue);
+	if (email !== undefined) {
+		payload.email = email;
 	}
-	if (fields.phone !== undefined && fields.phone !== '') {
-		payload.phone = fields.phone;
+	if (merged.phone !== undefined && merged.phone !== '') {
+		payload.phone = merged.phone;
 	}
-	if (fields.mobile !== undefined && fields.mobile !== '') {
-		payload.mobile = fields.mobile;
+	if (merged.mobile !== undefined && merged.mobile !== '') {
+		payload.mobile = merged.mobile;
 	}
-	if (fields.address !== undefined && fields.address !== '') {
-		payload.address = fields.address;
+	if (merged.address !== undefined && merged.address !== '') {
+		payload.address = merged.address;
 	}
-	if (fields.role !== undefined && fields.role !== '') {
-		payload.role = fields.role;
+	if (merged.role !== undefined && merged.role !== '') {
+		payload.role = merged.role;
 	}
-	if (fields.company !== undefined && fields.company !== '') {
-		payload.company = fields.company;
+	if (merged.company !== undefined && merged.company !== '') {
+		payload.company = merged.company;
 	}
 
 	return payload;
-})() }}`;
+};
+
+const contactCreateBodyExpression = `={{ (${buildContactCreateBody.toString()})($parameter, $credentials) }}`;
+const contactUpdateBodyExpression = `={{ (${buildContactUpdateBody.toString()})($parameter) }}`;
 
 export const contactDescription: INodeProperties[] = [
 	{
@@ -105,17 +210,7 @@ export const contactDescription: INodeProperties[] = [
 					request: {
 						method: 'POST',
 						url: '/api/contacts',
-						body: {
-							first_name: '={{$parameter.firstName}}',
-							last_name: '={{$parameter.lastName}}',
-							organisation_id: '={{$credentials.organisationId}}',
-							email: contactCreateEmailExpression,
-							phone: '={{$parameter.additionalFields?.phone || undefined}}',
-							mobile: '={{$parameter.additionalFields?.mobile || undefined}}',
-							address: '={{$parameter.additionalFields?.address || undefined}}',
-							role: '={{$parameter.additionalFields?.role || undefined}}',
-							company: '={{$parameter.additionalFields?.company || undefined}}',
-						},
+						body: contactCreateBodyExpression,
 						json: true,
 					},
 				},
@@ -284,6 +379,20 @@ export const contactDescription: INodeProperties[] = [
 		},
 	},
 	{
+		displayName: 'Additional Fields (Expression JSON)',
+		name: 'additionalFieldsExpression',
+		type: 'json',
+		default: '',
+		description:
+			'Optional JSON object to override Additional Fields. Useful when you need expressions for nested fields.',
+		displayOptions: {
+			show: {
+				...showOnlyForContact,
+				operation: ['create'],
+			},
+		},
+	},
+	{
 		displayName: 'Additional Fields',
 		name: 'additionalFields',
 		type: 'collection',
@@ -334,6 +443,20 @@ export const contactDescription: INodeProperties[] = [
 				default: '',
 			},
 		],
+	},
+	{
+		displayName: 'Update Fields (Expression JSON)',
+		name: 'updateFieldsExpression',
+		type: 'json',
+		default: '',
+		description:
+			'Optional JSON object to override Update Fields. Useful when you need expressions for nested fields.',
+		displayOptions: {
+			show: {
+				...showOnlyForContact,
+				operation: ['update'],
+			},
+		},
 	},
 	{
 		displayName: 'Update Fields',
