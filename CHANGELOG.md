@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.8.0...v1.9.0) (2026-02-10)
+
+
+### Features
+
+* **contact:** simplify contact creation and update logic with direct field access ([c7c3582](https://github.com/immoJUMP/n8n-nodes-immojump/commit/c7c3582345edea81eeb504267884803efecc99e8))
+
 ## [1.8.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.7.3...v1.8.0) (2026-02-09)
 
 
