@@ -4,7 +4,23 @@ const showOnlyForContact = {
 	resource: ['contact'],
 };
 
+export const sanitizeEmail = (value: unknown): string | undefined => {
+	if (value === undefined || value === null) {
+		return undefined;
+	}
+	const trimmed = String(value).trim();
+	if (trimmed === '') {
+		return undefined;
+	}
+	const cleaned = trimmed.replace(/^=/, '');
+	return cleaned === '' ? undefined : cleaned;
+};
+
+const sanitizeEmailExpression = sanitizeEmail.toString();
+const contactCreateEmailExpression = `={{ (${sanitizeEmailExpression})($parameter.email || $parameter.additionalFields?.email) }}`;
+
 const contactUpdateBodyExpression = `={{ (() => {
+	const sanitizeEmail = ${sanitizeEmailExpression};
 	const payload = {};
 	const fields = $parameter.updateFields ?? {};
 
@@ -14,9 +30,10 @@ const contactUpdateBodyExpression = `={{ (() => {
 	if (fields.lastName !== undefined && fields.lastName !== '') {
 		payload.last_name = fields.lastName;
 	}
-	const email = $parameter.email !== undefined && $parameter.email !== '' ? $parameter.email : fields.email;
-	if (email !== undefined && email !== '') {
-		payload.email = String(email).replace(/^=/, '').trim();
+	const email = $parameter.email || fields.email;
+	const cleanedEmail = sanitizeEmail(email);
+	if (cleanedEmail) {
+		payload.email = cleanedEmail;
 	}
 	if (fields.phone !== undefined && fields.phone !== '') {
 		payload.phone = fields.phone;
@@ -92,8 +109,7 @@ export const contactDescription: INodeProperties[] = [
 							first_name: '={{$parameter.firstName}}',
 							last_name: '={{$parameter.lastName}}',
 							organisation_id: '={{$credentials.organisationId}}',
-							email:
-								'={{ (() => { const email = ($parameter.email !== undefined && $parameter.email !== "") ? $parameter.email : $parameter.additionalFields?.email; if (email === undefined || email === "") return undefined; return String(email).replace(/^=/, "").trim(); })() }}',
+							email: contactCreateEmailExpression,
 							phone: '={{$parameter.additionalFields?.phone || undefined}}',
 							mobile: '={{$parameter.additionalFields?.mobile || undefined}}',
 							address: '={{$parameter.additionalFields?.address || undefined}}',
