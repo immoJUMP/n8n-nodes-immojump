@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.11.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.10.0...v1.11.0) (2026-02-10)
+
+
+### Features
+
+* **activity:** enhance description handling with expression support ([4a9a513](https://github.com/immoJUMP/n8n-nodes-immojump/commit/4a9a5130743db3fcf382b35146455abe5c723908))
+* **activity:** implement buildActivityCreateBody and buildActivityUpdateBody functions with expression support ([d77a279](https://github.com/immoJUMP/n8n-nodes-immojump/commit/d77a27972edfbc38612b2def7c8980778ac2d006))
+* add test step to build-and-publish and build-and-test workflows ([083c723](https://github.com/immoJUMP/n8n-nodes-immojump/commit/083c7233cc91d90c775b9cf468af837d3a1f9f60))
+* add test suite for sanitizeEmail function and update package.json ([e82f2c6](https://github.com/immoJUMP/n8n-nodes-immojump/commit/e82f2c6e0767909b68b79502bcd622f614275539))
+* **contact:** refactor buildContactCreateBody and buildContactUpdateBody to include expression handling ([d77a279](https://github.com/immoJUMP/n8n-nodes-immojump/commit/d77a27972edfbc38612b2def7c8980778ac2d006))
+* **immobilie:** add buildImmobilieCreateBody and buildImmobilieUpdateBody functions with expression support ([d77a279](https://github.com/immoJUMP/n8n-nodes-immojump/commit/d77a27972edfbc38612b2def7c8980778ac2d006))
+
 ## [1.10.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.9.0...v1.10.0) (2026-02-10)
 
 
