@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildContactCreateBody, buildContactUpdateBody } from '../nodes/Immojump/resources/contact/index';
+import {
+	buildContactCreateBody,
+	buildContactUpdateBody,
+	contactDescription,
+} from '../nodes/Immojump/resources/contact/index';
 
 const globalAny = globalThis as typeof globalThis & {
 	$evaluateExpression?: (expression: string) => unknown;
@@ -180,5 +184,28 @@ describe('buildContactUpdateBody', () => {
 				updateFieldsExpression: '{bad',
 			}),
 		).toThrow('updateFieldsExpression must be valid JSON');
+	});
+});
+
+describe('contact create routing', () => {
+	it('includes query fallback params for integrations that drop JSON body', () => {
+		const operationProperty = contactDescription.find((property) => property.name === 'operation') as
+			| { options?: Array<{ value: string; routing?: { request?: { url?: string; qs?: Record<string, unknown> } } }> }
+			| undefined;
+		const createOption = operationProperty?.options?.find((option) => option.value === 'create');
+		const request = createOption?.routing?.request;
+
+		expect(request?.url).toBe('/api/contacts');
+		expect(request?.qs).toEqual({
+			first_name: '={{$parameter.firstName || undefined}}',
+			last_name: '={{$parameter.lastName || undefined}}',
+			email: '={{$parameter.additionalFields?.email || undefined}}',
+			phone: '={{$parameter.additionalFields?.phone || undefined}}',
+			mobile: '={{$parameter.additionalFields?.mobile || undefined}}',
+			address: '={{$parameter.additionalFields?.address || undefined}}',
+			role: '={{$parameter.additionalFields?.role || undefined}}',
+			company: '={{$parameter.additionalFields?.company || undefined}}',
+			organisation_id: '={{$credentials.organisationId || $credentials.organizationId || undefined}}',
+		});
 	});
 });

@@ -18,8 +18,7 @@ export const buildActivityCreateBody = (
 		if (trimmed === '') {
 			return value;
 		}
-		const hasExpression =
-			trimmed.startsWith('=') || (trimmed.includes('{{') && trimmed.includes('}}'));
+		const hasExpression = trimmed.startsWith('=');
 		if (!hasExpression || typeof $evaluateExpression !== 'function') {
 			return value;
 		}
@@ -104,8 +103,11 @@ export const buildActivityCreateBody = (
 		body.immobilien_id = immobilienId;
 	}
 
-	if (credentials.organisationId) {
-		body.organisation_id = credentials.organisationId;
+	const credentialOrganisationId =
+		(credentials.organisationId as string | undefined) ||
+		(credentials.organizationId as string | undefined);
+	if (credentialOrganisationId) {
+		body.organisation_id = credentialOrganisationId;
 	}
 
 	const rawContactIds = resolveExpressionValue(merged.contactIds);
@@ -137,8 +139,7 @@ export const buildActivityUpdateBody = (parameter: Record<string, unknown>) => {
 		if (trimmed === '') {
 			return value;
 		}
-		const hasExpression =
-			trimmed.startsWith('=') || (trimmed.includes('{{') && trimmed.includes('}}'));
+		const hasExpression = trimmed.startsWith('=');
 		if (!hasExpression || typeof $evaluateExpression !== 'function') {
 			return value;
 		}
@@ -308,9 +309,9 @@ export const activityDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'POST',
-						url:
-							'={{ (() => { const resolveExpressionValue = (value) => { if (typeof value !== "string") { return value; } const trimmed = value.trim(); if (trimmed === "") { return value; } const hasExpression = trimmed.startsWith("=") || (trimmed.includes("{{") && trimmed.includes("}}")); if (!hasExpression || typeof $evaluateExpression !== "function") { return value; } const expression = trimmed.startsWith("=") ? trimmed.slice(1) : trimmed; return $evaluateExpression(expression); }; const additional = $parameter.additionalFields || {}; let overrides = $parameter.additionalFieldsExpression || {}; if (typeof overrides === "string") { try { overrides = JSON.parse(overrides); } catch { overrides = {}; } } const merged = { ...additional, ...(overrides && typeof overrides === "object" ? overrides : {}) }; const rawId = merged.immobilienId || $parameter.immobilienId; const resolvedId = resolveExpressionValue(rawId); return resolvedId ? "/api/activities/activities/immobilie/" + resolvedId : "/api/activities/activities"; })() }}',
+						url: '/api/activities/activities',
 						body: activityCreateBodyExpression,
+						json: true,
 					},
 				},
 			},
