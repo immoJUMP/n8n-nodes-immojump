@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { buildActivityCreateBody, buildActivityUpdateBody } from '../nodes/Immojump/resources/activity/index';
+import {
+	activityDescription,
+	buildActivityCreateBody,
+	buildActivityUpdateBody,
+} from '../nodes/Immojump/resources/activity/index';
 
 const globalAny = globalThis as typeof globalThis & {
 	$evaluateExpression?: (expression: string) => unknown;
@@ -179,5 +183,28 @@ describe('buildActivityUpdateBody', () => {
 				updateFieldsExpression: '{bad',
 			}),
 		).toThrow('updateFieldsExpression must be valid JSON');
+	});
+});
+
+describe('activity getAll routing', () => {
+	it('uses organisation id from credentials in query params', () => {
+		const operationProperty = activityDescription.find((property) => property.name === 'operation') as
+			| { options?: Array<{ value: string; routing?: { request?: { url?: string; qs?: Record<string, unknown> } } }> }
+			| undefined;
+		const getAllOption = operationProperty?.options?.find((option) => option.value === 'getAll');
+		const request = getAllOption?.routing?.request;
+
+		expect(request?.url).toBe('/api/activities/activities');
+		expect(request?.qs).toEqual({
+			organisation_id:
+				'={{$credentials.organisationId || $credentials.organizationId || $parameter.organisationId || undefined}}',
+			page: '={{$parameter.page || 1}}',
+			per_page: '={{$parameter.perPage || 25}}',
+			q: '={{$parameter.additionalOptions?.search || $parameter.search || undefined}}',
+			type: '={{$parameter.additionalOptions?.typeFilter || $parameter.typeFilter || undefined}}',
+			status: '={{$parameter.additionalOptions?.statusFilter || $parameter.statusFilter || undefined}}',
+			priority: '={{$parameter.additionalOptions?.priorityFilter || $parameter.priorityFilter || undefined}}',
+			immobilie: '={{$parameter.additionalOptions?.immobilienId || $parameter.immobilienId || undefined}}',
+		});
 	});
 });

@@ -270,7 +270,8 @@ export const activityDescription: INodeProperties[] = [
 						method: 'GET',
 						url: '/api/activities/activities',
 						qs: {
-							organisation_id: '={{$credentials.organisationId || undefined}}',
+							organisation_id:
+								'={{$credentials.organisationId || $credentials.organizationId || $parameter.organisationId || undefined}}',
 							page: '={{$parameter.page || 1}}',
 							per_page: '={{$parameter.perPage || 25}}',
 							q: '={{$parameter.additionalOptions?.search || $parameter.search || undefined}}',
