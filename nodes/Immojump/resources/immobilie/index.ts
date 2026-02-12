@@ -26,8 +26,7 @@ export const buildImmobilieCreateBody = (
 		if (trimmed === '') {
 			return value;
 		}
-		const hasExpression =
-			trimmed.startsWith('=') || (trimmed.includes('{{') && trimmed.includes('}}'));
+		const hasExpression = trimmed.startsWith('=');
 		if (!hasExpression || typeof $evaluateExpression !== 'function') {
 			return value;
 		}
@@ -108,8 +107,7 @@ export const buildImmobilieUpdateBody = (parameter: Record<string, unknown>) => 
 		if (trimmed === '') {
 			return value;
 		}
-		const hasExpression =
-			trimmed.startsWith('=') || (trimmed.includes('{{') && trimmed.includes('}}'));
+		const hasExpression = trimmed.startsWith('=');
 		if (!hasExpression || typeof $evaluateExpression !== 'function') {
 			return value;
 		}

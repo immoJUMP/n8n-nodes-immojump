@@ -18,8 +18,7 @@ export const buildContactCreateBody = (
 		if (trimmed === '') {
 			return value;
 		}
-		const hasExpression =
-			trimmed.startsWith('=') || (trimmed.includes('{{') && trimmed.includes('}}'));
+		const hasExpression = trimmed.startsWith('=');
 		if (!hasExpression || typeof $evaluateExpression !== 'function') {
 			return value;
 		}
@@ -79,7 +78,7 @@ export const buildContactCreateBody = (
 	const body: Record<string, unknown> = {
 		first_name: resolveExpressionValue(parameter.firstName),
 		last_name: resolveExpressionValue(parameter.lastName),
-		organisation_id: credentials.organisationId,
+		organisation_id: credentials.organisationId ?? credentials.organizationId,
 	};
 
 	const emailValue = pickValue(merged.email, parameter.email);
@@ -120,8 +119,7 @@ export const buildContactUpdateBody = (parameter: Record<string, unknown>) => {
 		if (trimmed === '') {
 			return value;
 		}
-		const hasExpression =
-			trimmed.startsWith('=') || (trimmed.includes('{{') && trimmed.includes('}}'));
+		const hasExpression = trimmed.startsWith('=');
 		if (!hasExpression || typeof $evaluateExpression !== 'function') {
 			return value;
 		}
@@ -269,14 +267,25 @@ export const contactDescription: INodeProperties[] = [
 				action: 'Create contact',
 				description: 'Create a new contact for the current organisation',
 				routing: {
-					request: {
-						method: 'POST',
-						url: '/api/contacts',
-						body: contactCreateBodyExpression,
-						json: true,
+						request: {
+							method: 'POST',
+							url: '/api/contacts',
+							qs: {
+								first_name: '={{$parameter.firstName || undefined}}',
+								last_name: '={{$parameter.lastName || undefined}}',
+								email: '={{$parameter.additionalFields?.email || undefined}}',
+								phone: '={{$parameter.additionalFields?.phone || undefined}}',
+								mobile: '={{$parameter.additionalFields?.mobile || undefined}}',
+								address: '={{$parameter.additionalFields?.address || undefined}}',
+								role: '={{$parameter.additionalFields?.role || undefined}}',
+								company: '={{$parameter.additionalFields?.company || undefined}}',
+								organisation_id: '={{$credentials.organisationId || $credentials.organizationId || undefined}}',
+							},
+							body: contactCreateBodyExpression,
+							json: true,
+						},
 					},
 				},
-			},
 			{
 				name: 'Update',
 				value: 'update',
