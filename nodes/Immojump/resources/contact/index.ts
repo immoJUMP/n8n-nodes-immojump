@@ -1,6 +1,7 @@
 import type { INodeProperties } from 'n8n-workflow';
 
 declare const $evaluateExpression: (expression: string, itemIndex?: number) => unknown;
+declare const $json: Record<string, unknown>;
 
 const showOnlyForContact = {
 	resource: ['contact'],
@@ -10,6 +11,21 @@ export const buildContactCreateBody = (
 	parameter: Record<string, unknown>,
 	credentials: Record<string, unknown>,
 ) => {
+	const resolveJsonPath = (path: string): unknown => {
+		if (typeof $json !== 'object' || $json === null) {
+			return undefined;
+		}
+		const segments = path.split('.').filter((segment) => segment !== '');
+		let current: unknown = $json;
+		for (const segment of segments) {
+			if (typeof current !== 'object' || current === null || !(segment in (current as Record<string, unknown>))) {
+				return undefined;
+			}
+			current = (current as Record<string, unknown>)[segment];
+		}
+		return current;
+	};
+
 	const resolveExpressionValue = (value: unknown): unknown => {
 		if (typeof value !== 'string') {
 			return value;
@@ -19,11 +35,31 @@ export const buildContactCreateBody = (
 			return value;
 		}
 		const hasExpression = trimmed.startsWith('=');
-		if (!hasExpression || typeof $evaluateExpression !== 'function') {
+		if (!hasExpression) {
 			return value;
 		}
-		const expression = trimmed.startsWith('=') ? trimmed.slice(1) : trimmed;
-		return $evaluateExpression(expression);
+
+		const expressionCandidate = trimmed.slice(1).trim();
+		const moustacheMatch = expressionCandidate.match(/^\{\{\s*(.*?)\s*\}\}$/);
+		const normalizedExpression = moustacheMatch ? moustacheMatch[1] : expressionCandidate;
+
+		const jsonPathMatch = normalizedExpression.match(/^\$json\.([A-Za-z0-9_.]+)$/);
+		if (jsonPathMatch) {
+			const resolved = resolveJsonPath(jsonPathMatch[1]);
+			if (resolved !== undefined) {
+				return resolved;
+			}
+		}
+
+		if (typeof $evaluateExpression === 'function') {
+			const evaluated = $evaluateExpression(normalizedExpression);
+			if (typeof evaluated === 'string' && evaluated.trim() === trimmed) {
+				return undefined;
+			}
+			return evaluated;
+		}
+
+		return undefined;
 	};
 
 	const resolveStringValue = (value: unknown): string | undefined => {
@@ -111,6 +147,21 @@ export const buildContactCreateBody = (
 };
 
 export const buildContactUpdateBody = (parameter: Record<string, unknown>) => {
+	const resolveJsonPath = (path: string): unknown => {
+		if (typeof $json !== 'object' || $json === null) {
+			return undefined;
+		}
+		const segments = path.split('.').filter((segment) => segment !== '');
+		let current: unknown = $json;
+		for (const segment of segments) {
+			if (typeof current !== 'object' || current === null || !(segment in (current as Record<string, unknown>))) {
+				return undefined;
+			}
+			current = (current as Record<string, unknown>)[segment];
+		}
+		return current;
+	};
+
 	const resolveExpressionValue = (value: unknown): unknown => {
 		if (typeof value !== 'string') {
 			return value;
@@ -120,11 +171,31 @@ export const buildContactUpdateBody = (parameter: Record<string, unknown>) => {
 			return value;
 		}
 		const hasExpression = trimmed.startsWith('=');
-		if (!hasExpression || typeof $evaluateExpression !== 'function') {
+		if (!hasExpression) {
 			return value;
 		}
-		const expression = trimmed.startsWith('=') ? trimmed.slice(1) : trimmed;
-		return $evaluateExpression(expression);
+
+		const expressionCandidate = trimmed.slice(1).trim();
+		const moustacheMatch = expressionCandidate.match(/^\{\{\s*(.*?)\s*\}\}$/);
+		const normalizedExpression = moustacheMatch ? moustacheMatch[1] : expressionCandidate;
+
+		const jsonPathMatch = normalizedExpression.match(/^\$json\.([A-Za-z0-9_.]+)$/);
+		if (jsonPathMatch) {
+			const resolved = resolveJsonPath(jsonPathMatch[1]);
+			if (resolved !== undefined) {
+				return resolved;
+			}
+		}
+
+		if (typeof $evaluateExpression === 'function') {
+			const evaluated = $evaluateExpression(normalizedExpression);
+			if (typeof evaluated === 'string' && evaluated.trim() === trimmed) {
+				return undefined;
+			}
+			return evaluated;
+		}
+
+		return undefined;
 	};
 
 	const resolveStringValue = (value: unknown): string | undefined => {
@@ -218,6 +289,36 @@ export const buildContactUpdateBody = (parameter: Record<string, unknown>) => {
 
 const contactCreateBodyExpression = `={{ (${buildContactCreateBody.toString()})($parameter, $credentials) }}`;
 const contactUpdateBodyExpression = `={{ (${buildContactUpdateBody.toString()})($parameter) }}`;
+const contactParamOrJsonExpression = (parameterPath: string) =>
+	`={{ (() => {
+		const getByPath = (obj, path) => {
+			if (!obj || typeof obj !== 'object') return undefined;
+			let current = obj;
+			for (const segment of path.split('.')) {
+				if (!segment) continue;
+				if (!current || typeof current !== 'object' || !(segment in current)) return undefined;
+				current = current[segment];
+			}
+			return current;
+		};
+		const resolveValue = (raw) => {
+			if (raw === undefined || raw === null) return undefined;
+			if (typeof raw !== 'string') return raw;
+			const trimmed = raw.trim();
+			if (!trimmed.startsWith('=')) return trimmed === '' ? undefined : trimmed;
+
+			const expressionCandidate = trimmed.slice(1).trim();
+			const moustacheMatch = expressionCandidate.match(/^\\{\\{\\s*(.*?)\\s*\\}\\}$/);
+			const normalizedExpression = moustacheMatch ? moustacheMatch[1] : expressionCandidate;
+			const jsonPathMatch = normalizedExpression.match(/^\\$json\\.([A-Za-z0-9_.]+)$/);
+			if (jsonPathMatch) {
+				const resolvedFromJson = getByPath($json, jsonPathMatch[1]);
+				if (resolvedFromJson !== undefined) return resolvedFromJson;
+			}
+			return trimmed;
+		};
+		return resolveValue(getByPath($parameter, '${parameterPath}')) ?? undefined;
+	})() }}`;
 
 export const contactDescription: INodeProperties[] = [
 	{
@@ -271,14 +372,14 @@ export const contactDescription: INodeProperties[] = [
 							method: 'POST',
 							url: '/api/contacts',
 							qs: {
-								first_name: '={{$parameter.firstName || undefined}}',
-								last_name: '={{$parameter.lastName || undefined}}',
-								email: '={{$parameter.additionalFields?.email || undefined}}',
-								phone: '={{$parameter.additionalFields?.phone || undefined}}',
-								mobile: '={{$parameter.additionalFields?.mobile || undefined}}',
-								address: '={{$parameter.additionalFields?.address || undefined}}',
-								role: '={{$parameter.additionalFields?.role || undefined}}',
-								company: '={{$parameter.additionalFields?.company || undefined}}',
+								first_name: contactParamOrJsonExpression('firstName'),
+								last_name: contactParamOrJsonExpression('lastName'),
+								email: contactParamOrJsonExpression('additionalFields.email'),
+								phone: contactParamOrJsonExpression('additionalFields.phone'),
+								mobile: contactParamOrJsonExpression('additionalFields.mobile'),
+								address: contactParamOrJsonExpression('additionalFields.address'),
+								role: contactParamOrJsonExpression('additionalFields.role'),
+								company: contactParamOrJsonExpression('additionalFields.company'),
 								organisation_id: '={{$credentials.organisationId || $credentials.organizationId || undefined}}',
 							},
 							body: contactCreateBodyExpression,
