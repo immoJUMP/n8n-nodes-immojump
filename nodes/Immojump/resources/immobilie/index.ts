@@ -248,7 +248,13 @@ export const immobilieDescription: INodeProperties[] = [
 				routing: {
 					request: {
 						method: 'GET',
-						url: '=/api/v2/immobilien?organisation_id={{$credentials.organisationId}}&page={{$parameter.page || 1}}&per_page={{$parameter.perPage || 20}}',
+						url: '/api/v2/immobilien',
+						qs: {
+							organisation_id:
+								'={{$credentials.organisationId || $credentials.organizationId || $parameter.organisationId || undefined}}',
+							page: '={{$parameter.page || 1}}',
+							per_page: '={{$parameter.perPage || 20}}',
+						},
 					},
 				},
 			},
