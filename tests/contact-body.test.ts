@@ -7,6 +7,7 @@ import {
 
 const globalAny = globalThis as typeof globalThis & {
 	$evaluateExpression?: (expression: string) => unknown;
+	$json?: Record<string, unknown>;
 };
 
 describe('buildContactCreateBody', () => {
@@ -115,6 +116,96 @@ describe('buildContactCreateBody', () => {
 			company: 'NewCo',
 		});
 	});
+
+	it('resolves simple $json expressions when evaluateExpression is unavailable', () => {
+		globalAny.$json = {
+			email: 'waltertill@mail.de',
+			phone: '+12345',
+		};
+
+		const body = buildContactCreateBody(
+			{
+				firstName: 'Felix',
+				lastName: 'Walter',
+				additionalFields: {
+					email: '={{ $json.email }}',
+					phone: '={{ $json.phone }}',
+				},
+			},
+			{ organisationId: 'org-json' },
+		);
+
+		delete globalAny.$json;
+
+		expect(body).toEqual({
+			first_name: 'Felix',
+			last_name: 'Walter',
+			organisation_id: 'org-json',
+			email: 'waltertill@mail.de',
+			phone: '+12345',
+		});
+	});
+
+	it('normalizes moustache expressions before evaluateExpression', () => {
+		globalAny.$evaluateExpression = (expr: string) => {
+			if (expr === '$json.email') return 'waltertill@mail.de';
+			if (expr === '$json.phone') return '+12345';
+			return undefined;
+		};
+
+		const body = buildContactCreateBody(
+			{
+				firstName: 'Felix',
+				lastName: 'Walter',
+				additionalFields: {
+					email: '={{ $json.email }}',
+					phone: '={{ $json.phone }}',
+				},
+			},
+			{ organisationId: 'org-eval' },
+		);
+
+		delete globalAny.$evaluateExpression;
+
+		expect(body).toEqual({
+			first_name: 'Felix',
+			last_name: 'Walter',
+			organisation_id: 'org-eval',
+			email: 'waltertill@mail.de',
+			phone: '+12345',
+		});
+	});
+
+	it('falls back to evaluateExpression when direct $json lookup is unavailable', () => {
+		delete globalAny.$json;
+		globalAny.$evaluateExpression = (expr: string) => {
+			if (expr === '$json.email') return 'fallback@mail.de';
+			if (expr === '$json.phone') return '+49000111';
+			return undefined;
+		};
+
+		const body = buildContactCreateBody(
+			{
+				firstName: 'Felix',
+				lastName: 'Walter',
+				additionalFields: {
+					email: '={{ $json.email }}',
+					phone: '={{ $json.phone }}',
+				},
+			},
+			{ organisationId: 'org-fallback' },
+		);
+
+		delete globalAny.$evaluateExpression;
+
+		expect(body).toEqual({
+			first_name: 'Felix',
+			last_name: 'Walter',
+			organisation_id: 'org-fallback',
+			email: 'fallback@mail.de',
+			phone: '+49000111',
+		});
+	});
 });
 
 describe('buildContactUpdateBody', () => {
@@ -196,16 +287,16 @@ describe('contact create routing', () => {
 		const request = createOption?.routing?.request;
 
 		expect(request?.url).toBe('/api/contacts');
-		expect(request?.qs).toEqual({
-			first_name: '={{$parameter.firstName || undefined}}',
-			last_name: '={{$parameter.lastName || undefined}}',
-			email: '={{$parameter.additionalFields?.email || undefined}}',
-			phone: '={{$parameter.additionalFields?.phone || undefined}}',
-			mobile: '={{$parameter.additionalFields?.mobile || undefined}}',
-			address: '={{$parameter.additionalFields?.address || undefined}}',
-			role: '={{$parameter.additionalFields?.role || undefined}}',
-			company: '={{$parameter.additionalFields?.company || undefined}}',
-			organisation_id: '={{$credentials.organisationId || $credentials.organizationId || undefined}}',
-		});
+		expect(request?.qs).toBeDefined();
+		const qs = (request?.qs ?? {}) as Record<string, string>;
+		expect(qs.organisation_id).toBe('={{$credentials.organisationId || $credentials.organizationId || undefined}}');
+		expect(qs.first_name).toContain("getByPath($parameter, 'firstName')");
+		expect(qs.last_name).toContain("getByPath($parameter, 'lastName')");
+		expect(qs.email).toContain("getByPath($parameter, 'additionalFields.email')");
+		expect(qs.phone).toContain("getByPath($parameter, 'additionalFields.phone')");
+		expect(qs.mobile).toContain("getByPath($parameter, 'additionalFields.mobile')");
+		expect(qs.address).toContain("getByPath($parameter, 'additionalFields.address')");
+		expect(qs.role).toContain("getByPath($parameter, 'additionalFields.role')");
+		expect(qs.company).toContain("getByPath($parameter, 'additionalFields.company')");
 	});
 });
