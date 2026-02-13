@@ -184,6 +184,17 @@ describe('buildActivityUpdateBody', () => {
 			}),
 		).toThrow('updateFieldsExpression must be valid JSON');
 	});
+
+	it('uses optional activityTitleUpdate fallback when updateFields.title is not set', () => {
+		const body = buildActivityUpdateBody({
+			activityTitleUpdate: 'Titel aus Feld',
+			updateFields: {},
+		});
+
+		expect(body).toEqual({
+			title: 'Titel aus Feld',
+		});
+	});
 });
 
 describe('activity getAll routing', () => {
@@ -206,5 +217,82 @@ describe('activity getAll routing', () => {
 			priority: '={{$parameter.additionalOptions?.priorityFilter || $parameter.priorityFilter || undefined}}',
 			immobilie: '={{$parameter.additionalOptions?.immobilienId || $parameter.immobilienId || undefined}}',
 		});
+	});
+});
+
+describe('activity create routing', () => {
+	it('sends create payload as object field expressions', () => {
+		const operationProperty = activityDescription.find((property) => property.name === 'operation') as
+			| {
+					options?: Array<{
+						value: string;
+						routing?: { request?: { method?: string; url?: string; json?: boolean; body?: Record<string, unknown> } };
+					}>;
+			  }
+			| undefined;
+		const createOption = operationProperty?.options?.find((option) => option.value === 'create');
+		const request = createOption?.routing?.request;
+
+		expect(request?.method).toBe('POST');
+		expect(request?.url).toBe('/api/activities/activities');
+		expect(request?.json).toBe(true);
+		expect(request?.qs).toEqual({
+			organisation_id: '={{$credentials.organisationId || $credentials.organizationId || undefined}}',
+		});
+		expect(request?.body).toMatchObject({
+			title: expect.stringContaining("$parameter, 'title'"),
+			type: expect.stringContaining("$parameter, 'type'"),
+			status: expect.stringContaining("$parameter, 'status'"),
+			priority: expect.stringContaining("$parameter, 'priority'"),
+			description: expect.stringContaining("$parameter, 'additionalFields.description'"),
+			contact_ids: expect.stringContaining('$parameter.additionalFields?.contactIds'),
+			organisation_id: '={{$credentials.organisationId || $credentials.organizationId || undefined}}',
+		});
+	});
+});
+
+describe('activity update routing', () => {
+	it('updates activity by activity id and sends json body', () => {
+		const operationProperty = activityDescription.find((property) => property.name === 'operation') as
+			| {
+					options?: Array<{
+						value: string;
+						routing?: { request?: { method?: string; url?: string; json?: boolean; qs?: Record<string, unknown> } };
+					}>;
+			  }
+			| undefined;
+		const updateOption = operationProperty?.options?.find((option) => option.value === 'update');
+		const request = updateOption?.routing?.request;
+
+		expect(request?.method).toBe('PUT');
+		expect(request?.url).toBe('=/api/activities/activities/{{$parameter.activityIdUpdate}}');
+		expect(request?.json).toBe(true);
+		expect(request?.qs).toMatchObject({
+			title: expect.stringContaining("$parameter, 'updateFields.title'"),
+			type: expect.stringContaining("$parameter, 'updateFields.type'"),
+			status: expect.stringContaining("$parameter, 'updateFields.status'"),
+			priority: expect.stringContaining("$parameter, 'updateFields.priority'"),
+			description: expect.stringContaining("$parameter, 'updateFields.description'"),
+			immobilien_id: expect.stringContaining("$parameter, 'updateFields.immobilienId'"),
+		});
+	});
+});
+
+describe('activity delete routing', () => {
+	it('deletes activity by activity id', () => {
+		const operationProperty = activityDescription.find((property) => property.name === 'operation') as
+			| {
+					options?: Array<{
+						value: string;
+						routing?: { request?: { method?: string; url?: string; qs?: Record<string, unknown> } };
+					}>;
+			  }
+			| undefined;
+		const deleteOption = operationProperty?.options?.find((option) => option.value === 'delete');
+		const request = deleteOption?.routing?.request;
+
+		expect(request?.method).toBe('DELETE');
+		expect(request?.url).toBe('=/api/activities/activities/{{$parameter.activityIdDelete}}');
+		expect(request?.qs).toBeUndefined();
 	});
 });

@@ -1,6 +1,7 @@
 import type { INodeProperties } from 'n8n-workflow';
 
 declare const $evaluateExpression: (expression: string, itemIndex?: number) => unknown;
+declare const $json: Record<string, unknown>;
 
 const showOnlyForActivity = {
 	resource: ['activity'],
@@ -183,13 +184,15 @@ export const buildActivityUpdateBody = (parameter: Record<string, unknown>) => {
 
 	const payload: Record<string, unknown> = {};
 	const fields = (parameter.updateFields as Record<string, unknown>) ?? {};
+	const additionalOptions = (parameter.additionalOptionsUpdate as Record<string, unknown>) ?? {};
 	const overrides = parseObject(parameter.updateFieldsExpression, 'updateFieldsExpression') as
 		| Record<string, unknown>
 		| undefined;
 	const merged = overrides ? { ...fields, ...overrides } : fields;
 
-	if (merged.title !== undefined) {
-		payload.title = resolveExpressionValue(merged.title);
+	const titleSource = pickValue(merged.title, pickValue(additionalOptions.activityTitle, parameter.activityTitleUpdate));
+	if (titleSource !== undefined && titleSource !== null && titleSource !== '') {
+		payload.title = resolveExpressionValue(titleSource);
 	}
 	if (merged.type !== undefined) {
 		payload.type = resolveExpressionValue(merged.type);
@@ -248,8 +251,139 @@ export const buildActivityUpdateBody = (parameter: Record<string, unknown>) => {
 	return payload;
 };
 
-const activityCreateBodyExpression = `={{ (${buildActivityCreateBody.toString()})($parameter, $credentials) }}`;
 const activityUpdateBodyExpression = `={{ (${buildActivityUpdateBody.toString()})($parameter) }}`;
+const activityParamOrJsonExpression = (parameterPath: string) =>
+	`={{ (() => {
+		const getByPath = (obj, path) => {
+			if (!obj || typeof obj !== 'object') return undefined;
+			let current = obj;
+			for (const segment of path.split('.')) {
+				if (!segment) continue;
+				if (!current || typeof current !== 'object' || !(segment in current)) return undefined;
+				current = current[segment];
+			}
+			return current;
+		};
+		const resolveValue = (raw) => {
+			if (raw === undefined || raw === null) return undefined;
+			if (typeof raw !== 'string') return raw;
+			const trimmed = raw.trim();
+			if (!trimmed.startsWith('=')) return trimmed === '' ? undefined : trimmed;
+
+			const expressionCandidate = trimmed.slice(1).trim();
+			const moustacheMatch = expressionCandidate.match(/^\\{\\{\\s*(.*?)\\s*\\}\\}$/);
+			const normalizedExpression = moustacheMatch ? moustacheMatch[1] : expressionCandidate;
+			const jsonPathMatch = normalizedExpression.match(/^\\$json\\.([A-Za-z0-9_.]+)$/);
+			if (jsonPathMatch) {
+				const resolvedFromJson = getByPath($json, jsonPathMatch[1]);
+				if (resolvedFromJson !== undefined) return resolvedFromJson;
+			}
+			if (typeof $evaluateExpression === 'function') {
+				const evaluated = $evaluateExpression(normalizedExpression);
+				if (typeof evaluated === 'string' && evaluated.trim() === trimmed) return undefined;
+				return evaluated;
+			}
+			return undefined;
+		};
+		return resolveValue(getByPath($parameter, '${parameterPath}')) ?? undefined;
+	})() }}`;
+const activityParamOrJsonExpressionWithFallback = (
+	primaryPath: string,
+	fallbackPathOrPaths: string | string[],
+) =>
+	`={{ (() => {
+		const getByPath = (obj, path) => {
+			if (!obj || typeof obj !== 'object') return undefined;
+			let current = obj;
+			for (const segment of path.split('.')) {
+				if (!segment) continue;
+				if (!current || typeof current !== 'object' || !(segment in current)) return undefined;
+				current = current[segment];
+			}
+			return current;
+		};
+		const resolveValue = (raw) => {
+			if (raw === undefined || raw === null) return undefined;
+			if (typeof raw !== 'string') return raw;
+			const trimmed = raw.trim();
+			if (!trimmed.startsWith('=')) return trimmed === '' ? undefined : trimmed;
+
+			const expressionCandidate = trimmed.slice(1).trim();
+			const moustacheMatch = expressionCandidate.match(/^\\{\\{\\s*(.*?)\\s*\\}\\}$/);
+			const normalizedExpression = moustacheMatch ? moustacheMatch[1] : expressionCandidate;
+			const jsonPathMatch = normalizedExpression.match(/^\\$json\\.([A-Za-z0-9_.]+)$/);
+			if (jsonPathMatch) {
+				const resolvedFromJson = getByPath($json, jsonPathMatch[1]);
+				if (resolvedFromJson !== undefined) return resolvedFromJson;
+			}
+			if (typeof $evaluateExpression === 'function') {
+				const evaluated = $evaluateExpression(normalizedExpression);
+				if (typeof evaluated === 'string' && evaluated.trim() === trimmed) return undefined;
+				return evaluated;
+			}
+			return undefined;
+		};
+		const primary = resolveValue(getByPath($parameter, '${primaryPath}'));
+		if (primary !== undefined && primary !== null && primary !== '') return primary;
+		const fallbackPaths = ${JSON.stringify(
+			Array.isArray(fallbackPathOrPaths) ? fallbackPathOrPaths : [fallbackPathOrPaths],
+		)};
+		for (const fallbackPath of fallbackPaths) {
+			const fallback = resolveValue(getByPath($parameter, fallbackPath));
+			if (fallback !== undefined && fallback !== null && fallback !== '') return fallback;
+		}
+		return undefined;
+	})() }}`;
+const activityCreateImmobilienIdExpression = activityParamOrJsonExpressionWithFallback(
+	'additionalFields.immobilienId',
+	'immobilienId',
+);
+const activityCreateContactIdsExpression = `={{ (() => {
+	const raw = (() => {
+		const value = $parameter.additionalFields?.contactIds;
+		if (value === undefined || value === null || value === '') return undefined;
+		if (typeof value !== 'string') return value;
+		const trimmed = value.trim();
+		if (!trimmed.startsWith('=')) return trimmed;
+		const expressionCandidate = trimmed.slice(1).trim();
+		const moustacheMatch = expressionCandidate.match(/^\\{\\{\\s*(.*?)\\s*\\}\\}$/);
+		const normalizedExpression = moustacheMatch ? moustacheMatch[1] : expressionCandidate;
+		const jsonPathMatch = normalizedExpression.match(/^\\$json\\.([A-Za-z0-9_.]+)$/);
+		if (jsonPathMatch) {
+			const getByPath = (obj, path) => {
+				if (!obj || typeof obj !== 'object') return undefined;
+				let current = obj;
+				for (const segment of path.split('.')) {
+					if (!segment) continue;
+					if (!current || typeof current !== 'object' || !(segment in current)) return undefined;
+					current = current[segment];
+				}
+				return current;
+			};
+			const resolvedFromJson = getByPath($json, jsonPathMatch[1]);
+			if (resolvedFromJson !== undefined) return resolvedFromJson;
+		}
+		if (typeof $evaluateExpression === 'function') {
+			const evaluated = $evaluateExpression(normalizedExpression);
+			if (typeof evaluated === 'string' && evaluated.trim() === trimmed) return undefined;
+			return evaluated;
+		}
+		return undefined;
+	})();
+	if (raw === undefined || raw === null || raw === '') return undefined;
+	if (Array.isArray(raw)) return raw;
+	if (typeof raw === 'string') {
+		const trimmed = raw.trim();
+		if (trimmed === '') return undefined;
+		try {
+			const parsed = JSON.parse(trimmed);
+			return Array.isArray(parsed) ? parsed : undefined;
+		} catch {
+			return undefined;
+		}
+	}
+	return undefined;
+})() }}`;
 
 export const activityDescription: INodeProperties[] = [
 	{
@@ -306,28 +440,59 @@ export const activityDescription: INodeProperties[] = [
 				value: 'create',
 				action: 'Create activity',
 				description: 'Create a new activity, optionally linked to a property',
-				routing: {
-					request: {
-						method: 'POST',
-						url: '/api/activities/activities',
-						body: activityCreateBodyExpression,
-						json: true,
-					},
+					routing: {
+						request: {
+							method: 'POST',
+							url: '/api/activities/activities',
+							qs: {
+								organisation_id: '={{$credentials.organisationId || $credentials.organizationId || undefined}}',
+							},
+							body: {
+								title: activityParamOrJsonExpression('title'),
+								type: activityParamOrJsonExpression('type'),
+							status: activityParamOrJsonExpression('status'),
+							priority: activityParamOrJsonExpression('priority'),
+							description: activityParamOrJsonExpression('additionalFields.description'),
+							scheduled_start: activityParamOrJsonExpression('additionalFields.scheduledStart'),
+							scheduled_end: activityParamOrJsonExpression('additionalFields.scheduledEnd'),
+							actual_start: activityParamOrJsonExpression('additionalFields.actualStart'),
+							actual_end: activityParamOrJsonExpression('additionalFields.actualEnd'),
+							assigned_to_id: activityParamOrJsonExpression('additionalFields.assignedToId'),
+							contact_ids: activityCreateContactIdsExpression,
+								immobilien_id: activityCreateImmobilienIdExpression,
+								organisation_id: '={{$credentials.organisationId || $credentials.organizationId || undefined}}',
+							},
+							json: true,
+						},
 				},
 			},
 			{
 				name: 'Update',
 				value: 'update',
 				action: 'Update activity',
-				description: 'Update an existing activity by property and title',
+				description: 'Update an existing activity by ID',
 				routing: {
 					request: {
 						method: 'PUT',
-						url: '=/api/activities/activities/immobilie/{{$parameter.immobilienIdUpdate}}/by-title',
+						url: '=/api/activities/activities/{{$parameter.activityIdUpdate}}',
 						qs: {
-							title: '={{$parameter.activityTitleUpdate}}',
+							title: activityParamOrJsonExpressionWithFallback('updateFields.title', [
+								'additionalOptionsUpdate.activityTitle',
+								'activityTitleUpdate',
+							]),
+							type: activityParamOrJsonExpression('updateFields.type'),
+							status: activityParamOrJsonExpression('updateFields.status'),
+							priority: activityParamOrJsonExpression('updateFields.priority'),
+							description: activityParamOrJsonExpression('updateFields.description'),
+							scheduled_start: activityParamOrJsonExpression('updateFields.scheduledStart'),
+							scheduled_end: activityParamOrJsonExpression('updateFields.scheduledEnd'),
+							actual_start: activityParamOrJsonExpression('updateFields.actualStart'),
+							actual_end: activityParamOrJsonExpression('updateFields.actualEnd'),
+							assigned_to_id: activityParamOrJsonExpression('updateFields.assignedToId'),
+							immobilien_id: activityParamOrJsonExpression('updateFields.immobilienId'),
 						},
 						body: activityUpdateBodyExpression,
+						json: true,
 					},
 				},
 			},
@@ -335,14 +500,11 @@ export const activityDescription: INodeProperties[] = [
 				name: 'Delete',
 				value: 'delete',
 				action: 'Delete activity',
-				description: 'Delete an activity by property and title',
+				description: 'Delete an activity by ID',
 				routing: {
 					request: {
 						method: 'DELETE',
-						url: '=/api/activities/activities/immobilie/{{$parameter.immobilienIdDelete}}/by-title',
-						qs: {
-							title: '={{$parameter.activityTitleDelete}}',
-						},
+						url: '=/api/activities/activities/{{$parameter.activityIdDelete}}',
 					},
 				},
 			},
@@ -364,8 +526,8 @@ export const activityDescription: INodeProperties[] = [
 		description: 'Exact activity title to look up (must be unique within the property)',
 	},
 	{
-		displayName: 'Property ID',
-		name: 'immobilienIdUpdate',
+		displayName: 'Activity ID',
+		name: 'activityIdUpdate',
 		type: 'string',
 		required: true,
 		displayOptions: {
@@ -375,11 +537,11 @@ export const activityDescription: INodeProperties[] = [
 			},
 		},
 		default: '',
-		description: 'ID of the property whose activity should be updated',
+		description: 'ID of the activity to update',
 	},
 	{
-		displayName: 'Property ID',
-		name: 'immobilienIdDelete',
+		displayName: 'Activity ID',
+		name: 'activityIdDelete',
 		type: 'string',
 		required: true,
 		displayOptions: {
@@ -389,35 +551,7 @@ export const activityDescription: INodeProperties[] = [
 			},
 		},
 		default: '',
-		description: 'ID of the property whose activity should be deleted',
-	},
-	{
-		displayName: 'Activity Title',
-		name: 'activityTitleUpdate',
-		type: 'string',
-		required: true,
-		displayOptions: {
-			show: {
-				...showOnlyForActivity,
-				operation: ['update'],
-			},
-		},
-		default: '',
-		description: 'Exact activity title to update (must be unique within the property)',
-	},
-	{
-		displayName: 'Activity Title',
-		name: 'activityTitleDelete',
-		type: 'string',
-		required: true,
-		displayOptions: {
-			show: {
-				...showOnlyForActivity,
-				operation: ['delete'],
-			},
-		},
-		default: '',
-		description: 'Exact activity title to delete (must be unique within the property)',
+		description: 'ID of the activity to delete',
 	},
 	{
 		displayName: 'Property ID',
@@ -677,6 +811,50 @@ export const activityDescription: INodeProperties[] = [
 				name: 'scheduledStart',
 				type: 'dateTime',
 				default: '',
+			},
+		],
+	},
+	{
+		displayName: 'Additional Options',
+		name: 'additionalOptionsUpdate',
+		type: 'collection',
+		placeholder: 'Add Option',
+		default: {},
+		displayOptions: {
+			show: {
+				...showOnlyForActivity,
+				operation: ['update'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Activity Title',
+				name: 'activityTitle',
+				type: 'string',
+				default: '',
+				description: 'Optional new title. You can also set title in Update Fields.',
+			},
+		],
+	},
+	{
+		displayName: 'Additional Options',
+		name: 'additionalOptionsDelete',
+		type: 'collection',
+		placeholder: 'Add Option',
+		default: {},
+		displayOptions: {
+			show: {
+				...showOnlyForActivity,
+				operation: ['delete'],
+			},
+		},
+		options: [
+			{
+				displayName: 'Activity Title',
+				name: 'activityTitle',
+				type: 'string',
+				default: '',
+				description: 'Optional label for your workflow context (not used for delete request)',
 			},
 		],
 	},

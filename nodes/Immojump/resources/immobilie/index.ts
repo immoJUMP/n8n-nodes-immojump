@@ -1,6 +1,7 @@
 import type { INodeProperties } from 'n8n-workflow';
 
 declare const $evaluateExpression: (expression: string, itemIndex?: number) => unknown;
+declare const $json: Record<string, unknown>;
 
 const showOnlyForImmobilie = {
 	resource: ['immobilie'],
@@ -99,6 +100,21 @@ export const buildImmobilieCreateBody = (
 };
 
 export const buildImmobilieUpdateBody = (parameter: Record<string, unknown>) => {
+	const resolveJsonPath = (path: string): unknown => {
+		if (typeof $json !== 'object' || $json === null) {
+			return undefined;
+		}
+		const segments = path.split('.').filter((segment) => segment !== '');
+		let current: unknown = $json;
+		for (const segment of segments) {
+			if (typeof current !== 'object' || current === null || !(segment in (current as Record<string, unknown>))) {
+				return undefined;
+			}
+			current = (current as Record<string, unknown>)[segment];
+		}
+		return current;
+	};
+
 	const resolveExpressionValue = (value: unknown): unknown => {
 		if (typeof value !== 'string') {
 			return value;
@@ -107,12 +123,32 @@ export const buildImmobilieUpdateBody = (parameter: Record<string, unknown>) => 
 		if (trimmed === '') {
 			return value;
 		}
-		const hasExpression = trimmed.startsWith('=');
-		if (!hasExpression || typeof $evaluateExpression !== 'function') {
+
+		const expressionCandidate = trimmed.startsWith('=') ? trimmed.slice(1).trim() : trimmed;
+		const moustacheMatch = expressionCandidate.match(/^\{\{\s*(.*?)\s*\}\}$/);
+		const normalizedExpression = moustacheMatch ? moustacheMatch[1] : expressionCandidate;
+		const isExpression = trimmed.startsWith('=') || moustacheMatch !== null;
+		if (!isExpression) {
 			return value;
 		}
-		const expression = trimmed.startsWith('=') ? trimmed.slice(1) : trimmed;
-		return $evaluateExpression(expression);
+
+		const jsonPathMatch = normalizedExpression.match(/^\$json\.([A-Za-z0-9_.]+)$/);
+		if (jsonPathMatch) {
+			const resolved = resolveJsonPath(jsonPathMatch[1]);
+			if (resolved !== undefined) {
+				return resolved;
+			}
+		}
+
+		if (typeof $evaluateExpression !== 'function') {
+			return undefined;
+		}
+
+		const evaluated = $evaluateExpression(normalizedExpression);
+		if (typeof evaluated === 'string' && evaluated.trim() === trimmed) {
+			return undefined;
+		}
+		return evaluated;
 	};
 
 	const parseObject = (value: unknown, fieldName: string) => {
@@ -200,11 +236,16 @@ export const buildImmobilieUpdateBody = (parameter: Record<string, unknown>) => 
 		payload.daten = daten;
 	}
 
+	if (Object.keys(payload).length === 0) {
+		throw new Error('At least one update field is required');
+	}
+
 	return payload;
 };
 
 const createBodyExpression = `={{ (${buildImmobilieCreateBody.toString()})($parameter, $credentials) }}`;
 const updateBodyExpression = `={{ (${buildImmobilieUpdateBody.toString()})($parameter) }}`;
+const patchBodyRequestOptions = { sendBody: true } as unknown as Record<string, boolean>;
 
 const createResourceLinkBodyExpression = `={{ (() => {
 	const body = {
@@ -309,6 +350,24 @@ export const immobilieDescription: INodeProperties[] = [
 					request: {
 						method: 'PATCH',
 						url: '=/api/v2/immobilien/{{$parameter.immobilieId}}',
+						qs: {
+							name: '={{$parameter.updateFields?.name || undefined}}',
+							type: '={{$parameter.updateFields?.type || undefined}}',
+							acquisition_price: '={{$parameter.updateFields?.acquisitionPrice || undefined}}',
+							sale_price: '={{$parameter.updateFields?.salePrice || undefined}}',
+							asking_price: '={{$parameter.updateFields?.askingPrice || undefined}}',
+							target_sale_price: '={{$parameter.updateFields?.targetSalePrice || undefined}}',
+							preview_image_id: '={{$parameter.updateFields?.previewImageId || undefined}}',
+							adresse: '={{$parameter.updateFields?.adresse || undefined}}',
+							kaufpreis: '={{$parameter.updateFields?.kaufpreis || undefined}}',
+							wohnflaeche: '={{$parameter.updateFields?.flaeche || undefined}}',
+							baujahr: '={{$parameter.updateFields?.baujahr || undefined}}',
+							zustand: '={{$parameter.updateFields?.zustand || undefined}}',
+						},
+						...patchBodyRequestOptions,
+						headers: {
+							'Content-Type': 'application/json',
+						},
 						body: updateBodyExpression,
 						json: true,
 					},
