@@ -163,7 +163,9 @@ export class Immojump implements INodeType {
 			async getTags(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				const credentials = await this.getCredentials('immojumpApi');
 				const baseUrl = credentials.baseUrl as string;
-				const organisationId = credentials.organisationId as string | undefined;
+				const organisationId =
+					(credentials.organisationId as string | undefined) ||
+					(credentials.organizationId as string | undefined);
 
 				if (!organisationId) {
 					return [
@@ -187,13 +189,15 @@ export class Immojump implements INodeType {
 
 					if (Array.isArray(response)) {
 						const tags = response.filter(isTagResponse);
-						return tags.map((tag) => ({
-							name:
-								typeof tag.name === 'string' && tag.name.trim() !== ''
-									? tag.name
-									: `Tag ${tag.id}`,
-							value: String(tag.id),
-						}));
+						return tags
+							.map((tag) => ({
+								name:
+									typeof tag.name === 'string' && tag.name.trim() !== ''
+										? tag.name
+										: `Tag ${tag.id}`,
+								value: String(tag.id),
+							}))
+							.sort((a, b) => a.name.localeCompare(b.name));
 					}
 
 					return [];

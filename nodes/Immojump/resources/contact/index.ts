@@ -74,6 +74,16 @@ export const buildContactCreateBody = (
 	const sanitizeEmail = (value: unknown): string | undefined => {
 		const resolved = resolveStringValue(value);
 		if (!resolved) {
+			// Allow literal "=mail@example.com" inputs when expression evaluation is unavailable.
+			if (typeof value === 'string') {
+				const trimmed = value.trim();
+				if (trimmed.startsWith('=')) {
+					const fallback = trimmed.slice(1).trim();
+					if (fallback !== '' && fallback.includes('@')) {
+						return fallback;
+					}
+				}
+			}
 			return undefined;
 		}
 		const cleaned = resolved.replace(/^=/, '');
@@ -210,6 +220,16 @@ export const buildContactUpdateBody = (parameter: Record<string, unknown>) => {
 	const sanitizeEmail = (value: unknown): string | undefined => {
 		const resolved = resolveStringValue(value);
 		if (!resolved) {
+			// Allow literal "=mail@example.com" inputs when expression evaluation is unavailable.
+			if (typeof value === 'string') {
+				const trimmed = value.trim();
+				if (trimmed.startsWith('=')) {
+					const fallback = trimmed.slice(1).trim();
+					if (fallback !== '' && fallback.includes('@')) {
+						return fallback;
+					}
+				}
+			}
 			return undefined;
 		}
 		const cleaned = resolved.replace(/^=/, '');
@@ -396,6 +416,16 @@ export const contactDescription: INodeProperties[] = [
 					request: {
 						method: 'PUT',
 						url: '=/api/contacts/{{$parameter.contactId}}',
+						qs: {
+							first_name: contactParamOrJsonExpression('updateFields.firstName'),
+							last_name: contactParamOrJsonExpression('updateFields.lastName'),
+							email: contactParamOrJsonExpression('updateFields.email'),
+							phone: contactParamOrJsonExpression('updateFields.phone'),
+							mobile: contactParamOrJsonExpression('updateFields.mobile'),
+							address: contactParamOrJsonExpression('updateFields.address'),
+							role: contactParamOrJsonExpression('updateFields.role'),
+							company: contactParamOrJsonExpression('updateFields.company'),
+						},
 						body: contactUpdateBodyExpression,
 						json: true,
 					},

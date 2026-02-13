@@ -7,6 +7,7 @@ import {
 
 const globalAny = globalThis as typeof globalThis & {
 	$evaluateExpression?: (expression: string) => unknown;
+	$json?: Record<string, unknown>;
 };
 
 describe('buildImmobilieCreateBody', () => {
@@ -180,12 +181,45 @@ describe('buildImmobilieUpdateBody', () => {
 		});
 	});
 
+	it('resolves moustache json paths on update fields', () => {
+		globalAny.$json = {
+			name: 'Objekt JSON',
+			daten: {
+				kaufpreis: 555000,
+			},
+		};
+
+		const payload = buildImmobilieUpdateBody({
+			updateFields: {
+				name: '={{ $json.name }}',
+				kaufpreis: '={{ $json.daten.kaufpreis }}',
+			},
+		});
+
+		delete globalAny.$json;
+
+		expect(payload).toEqual({
+			name: 'Objekt JSON',
+			daten: {
+				kaufpreis: 555000,
+			},
+		});
+	});
+
 	it('throws on invalid updateFieldsExpression JSON', () => {
 		expect(() =>
 			buildImmobilieUpdateBody({
 				updateFieldsExpression: '{bad',
 			}),
 		).toThrow('updateFieldsExpression must be valid JSON');
+	});
+
+	it('throws when no update fields are provided', () => {
+		expect(() =>
+			buildImmobilieUpdateBody({
+				updateFields: {},
+			}),
+		).toThrow('At least one update field is required');
 	});
 });
 

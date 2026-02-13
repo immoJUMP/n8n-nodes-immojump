@@ -300,3 +300,25 @@ describe('contact create routing', () => {
 		expect(qs.company).toContain("getByPath($parameter, 'additionalFields.company')");
 	});
 });
+
+describe('contact update routing', () => {
+	it('includes query fallback params for integrations that drop JSON body', () => {
+		const operationProperty = contactDescription.find((property) => property.name === 'operation') as
+			| { options?: Array<{ value: string; routing?: { request?: { url?: string; qs?: Record<string, unknown> } } }> }
+			| undefined;
+		const updateOption = operationProperty?.options?.find((option) => option.value === 'update');
+		const request = updateOption?.routing?.request;
+
+		expect(request?.url).toBe('=/api/contacts/{{$parameter.contactId}}');
+		expect(request?.qs).toBeDefined();
+		const qs = (request?.qs ?? {}) as Record<string, string>;
+		expect(qs.first_name).toContain("getByPath($parameter, 'updateFields.firstName')");
+		expect(qs.last_name).toContain("getByPath($parameter, 'updateFields.lastName')");
+		expect(qs.email).toContain("getByPath($parameter, 'updateFields.email')");
+		expect(qs.phone).toContain("getByPath($parameter, 'updateFields.phone')");
+		expect(qs.mobile).toContain("getByPath($parameter, 'updateFields.mobile')");
+		expect(qs.address).toContain("getByPath($parameter, 'updateFields.address')");
+		expect(qs.role).toContain("getByPath($parameter, 'updateFields.role')");
+		expect(qs.company).toContain("getByPath($parameter, 'updateFields.company')");
+	});
+});
