@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.11.2](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.11.1...v1.11.2) (2026-02-16)
+
+
+### Bug Fixes
+
+* **contact_event:** mapping fix ([eb564fc](https://github.com/immoJUMP/n8n-nodes-immojump/commit/eb564fcd257d22c3823afb7f3c4aaa100189ab0e))
+* **create_contact:** now variables should ne working for Creating_Contacts ([e28fdca](https://github.com/immoJUMP/n8n-nodes-immojump/commit/e28fdca70c3a286e9e860bd36f470dce91e6cfaf))
+* **get-events:** workover get events and fixed some smaller problems ([0915866](https://github.com/immoJUMP/n8n-nodes-immojump/commit/0915866669a5065cf190a25fc0be9766941daaef))
+* **n8n-node-immocalc:** every event should work now with variabels ([72cb5b0](https://github.com/immoJUMP/n8n-nodes-immojump/commit/72cb5b000aa7acb8b99bbd1cb7649aff6f4186d3))
+
 ## [1.11.1](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.11.0...v1.11.1) (2026-02-10)
 
 
