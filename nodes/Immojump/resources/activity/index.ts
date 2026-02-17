@@ -1,7 +1,6 @@
 import type { INodeProperties } from 'n8n-workflow';
 
 declare const $evaluateExpression: (expression: string, itemIndex?: number) => unknown;
-declare const $json: Record<string, unknown>;
 
 const showOnlyForActivity = {
 	resource: ['activity'],
@@ -440,16 +439,16 @@ export const activityDescription: INodeProperties[] = [
 				value: 'create',
 				action: 'Create activity',
 				description: 'Create a new activity, optionally linked to a property',
-					routing: {
-						request: {
-							method: 'POST',
-							url: '/api/activities/activities',
-							qs: {
-								organisation_id: '={{$credentials.organisationId || $credentials.organizationId || undefined}}',
-							},
-							body: {
-								title: activityParamOrJsonExpression('title'),
-								type: activityParamOrJsonExpression('type'),
+				routing: {
+					request: {
+						method: 'POST',
+						url: '/api/activities/activities',
+						qs: {
+							organisation_id: '={{$credentials.organisationId || $credentials.organizationId || undefined}}',
+						},
+						body: {
+							title: activityParamOrJsonExpression('title'),
+							type: activityParamOrJsonExpression('type'),
 							status: activityParamOrJsonExpression('status'),
 							priority: activityParamOrJsonExpression('priority'),
 							description: activityParamOrJsonExpression('additionalFields.description'),
@@ -459,11 +458,11 @@ export const activityDescription: INodeProperties[] = [
 							actual_end: activityParamOrJsonExpression('additionalFields.actualEnd'),
 							assigned_to_id: activityParamOrJsonExpression('additionalFields.assignedToId'),
 							contact_ids: activityCreateContactIdsExpression,
-								immobilien_id: activityCreateImmobilienIdExpression,
-								organisation_id: '={{$credentials.organisationId || $credentials.organizationId || undefined}}',
-							},
-							json: true,
+							immobilien_id: activityCreateImmobilienIdExpression,
+							organisation_id: '={{$credentials.organisationId || $credentials.organizationId || undefined}}',
 						},
+						json: true,
+					},
 				},
 			},
 			{
