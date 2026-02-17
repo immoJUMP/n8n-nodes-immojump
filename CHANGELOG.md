@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.3](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.11.2...v1.11.3) (2026-02-17)
+
+
+### Bug Fixes
+
+* **n8n-node-immocalc:** linting&build error is fixed hopefully ([dfa9c58](https://github.com/immoJUMP/n8n-nodes-immojump/commit/dfa9c58a150f10609d00494c6bc0aefe82fa9155))
+
 ## [1.11.2](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.11.1...v1.11.2) (2026-02-16)
 
 
