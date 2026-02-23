@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.4](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.11.3...v1.11.4) (2026-02-23)
+
+
+### Bug Fixes
+
+* **ImmojumpTrigger.node.ts:** Removed the useless Trigger for verification ([ef097a8](https://github.com/immoJUMP/n8n-nodes-immojump/commit/ef097a8e30acecae04088bd93373d2c74874f58f))
+
 ## [1.11.3](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.11.2...v1.11.3) (2026-02-17)
 
 
