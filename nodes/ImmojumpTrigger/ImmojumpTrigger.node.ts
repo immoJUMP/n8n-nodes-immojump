@@ -1,8 +1,6 @@
 import {
 	type INodeType,
 	type INodeTypeDescription,
-	type ITriggerFunctions,
-	type ITriggerResponse,
 	type IDataObject,
 	type IHookFunctions,
 	type IWebhookFunctions,
@@ -81,7 +79,7 @@ const parseErrorDetails = (
 	responseBody?: unknown;
 } => {
 	const details: { message?: string; statusCode?: number; responseBody?: unknown } = {};
-	if (error instanceof Error && typeof error.message === 'string') {
+	if (error instanceof Error) {
 		details.message = error.message;
 	}
 	if (typeof error === 'object' && error !== null) {
@@ -206,10 +204,6 @@ export class ImmojumpTrigger implements INodeType {
 			},
 		],
 	};
-
-	async trigger(this: ITriggerFunctions): Promise<ITriggerResponse> {
-		return {};
-	}
 
 	async webhook(this: IWebhookFunctions): Promise<IWebhookResponseData> {
 		const bodyData = this.getBodyData() as IDataObject;
