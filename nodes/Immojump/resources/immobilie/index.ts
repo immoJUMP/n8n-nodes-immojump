@@ -310,6 +310,18 @@ export const immobilieDescription: INodeProperties[] = [
 				},
 			},
 			{
+				name: 'Get Intelligence',
+				value: 'getIntelligence',
+				action: 'Get property intelligence',
+				description: 'Get profile fit, document checklist, opportunities and risks for the acting customer',
+				routing: {
+					request: {
+						method: 'GET',
+						url: '=/api/immobilien/{{$parameter.immobilieId}}/intelligence',
+					},
+				},
+			},
+			{
 				name: 'Create',
 				value: 'create',
 				action: 'Create immobilie',
@@ -422,7 +434,7 @@ export const immobilieDescription: INodeProperties[] = [
 		displayOptions: {
 			show: {
 				...showOnlyForImmobilie,
-				operation: ['get', 'update', 'delete', 'updateStatus', 'setTags', 'addResourceLink'],
+				operation: ['get', 'getIntelligence', 'update', 'delete', 'updateStatus', 'setTags', 'addResourceLink'],
 			},
 		},
 		default: '',
