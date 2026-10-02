@@ -240,3 +240,14 @@ describe('immobilie getAll routing', () => {
 		});
 	});
 });
+
+
+it('offers the source-aware overview through the shared backend route', () => {
+    const operations = immobilieDescription.find(p => p.name === 'operation')!;
+    const option = (operations.options as {value: string; routing?: {request: {method: string; url: string}}}[])
+        .find(o => o.value === 'getIntelligence');
+    expect(option?.routing?.request).toMatchObject({method: 'GET',
+        url: '=/api/immobilien/{{$parameter.immobilieId}}/intelligence'});
+    const id = immobilieDescription.find(p => p.name === 'immobilieId')!;
+    expect(id.displayOptions?.show?.operation).toContain('getIntelligence');
+});
