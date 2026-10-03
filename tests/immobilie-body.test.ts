@@ -99,7 +99,7 @@ describe('buildImmobilieCreateBody', () => {
 });
 
 describe('buildImmobilieUpdateBody', () => {
-	it('maps all update fields and daten payload', () => {
+	it('sends all update fields flat, never nested under daten', () => {
 		const payload = buildImmobilieUpdateBody({
 			updateFields: {
 				name: 'Objekt Neu',
@@ -130,18 +130,32 @@ describe('buildImmobilieUpdateBody', () => {
 			asking_price: 30,
 			target_sale_price: 40,
 			preview_image_id: null,
-			daten: {
-				adresse: 'Street 2',
-				kaufpreis: 250000,
-				wohnflaeche: 100,
-				baujahr: 2005,
-				zustand: 'Saniert',
-				foo: 'bar',
-			},
+			adresse: 'Street 2',
+			kaufpreis: 250000,
+			wohnflaeche: 100,
+			baujahr: 2005,
+			zustand: 'Saniert',
+			foo: 'bar',
 		});
 	});
 
-	it('resets daten when requested', () => {
+	it('lets explicit fields win over datenJson', () => {
+		const payload = buildImmobilieUpdateBody({
+			updateFields: {
+				name: 'Explizit',
+				kaufpreis: 300000,
+				datenJson: '{"name":"Aus JSON","kaufpreis":1,"zins":3.5}',
+			},
+		});
+
+		expect(payload).toEqual({
+			name: 'Explizit',
+			kaufpreis: 300000,
+			zins: 3.5,
+		});
+	});
+
+	it('ignores the removed resetDaten option of older workflows', () => {
 		const payload = buildImmobilieUpdateBody({
 			updateFields: {
 				resetDaten: true,
@@ -151,8 +165,27 @@ describe('buildImmobilieUpdateBody', () => {
 		});
 
 		expect(payload).toEqual({
-			daten: {},
+			adresse: 'Street 3',
+			kaufpreis: 300000,
 		});
+	});
+
+	it('requires a real field when only resetDaten is set', () => {
+		expect(() =>
+			buildImmobilieUpdateBody({
+				updateFields: { resetDaten: true },
+			}),
+		).toThrow('At least one update field is required');
+	});
+
+	it('no longer offers Reset Daten in the node UI', () => {
+		const updateFields = immobilieDescription.find((property) => property.name === 'updateFields') as
+			| { options?: Array<{ name: string }> }
+			| undefined;
+		const names = updateFields?.options?.map((option) => option.name) ?? [];
+
+		expect(names).toContain('datenJson');
+		expect(names).not.toContain('resetDaten');
 	});
 
 	it('evaluates expressions on update fields', () => {
@@ -175,9 +208,7 @@ describe('buildImmobilieUpdateBody', () => {
 
 		expect(payload).toEqual({
 			name: 'Objekt Expr Update',
-			daten: {
-				kaufpreis: 400000,
-			},
+			kaufpreis: 400000,
 		});
 	});
 
@@ -200,9 +231,7 @@ describe('buildImmobilieUpdateBody', () => {
 
 		expect(payload).toEqual({
 			name: 'Objekt JSON',
-			daten: {
-				kaufpreis: 555000,
-			},
+			kaufpreis: 555000,
 		});
 	});
 

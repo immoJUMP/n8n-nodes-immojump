@@ -180,6 +180,18 @@ export const buildImmobilieUpdateBody = (parameter: Record<string, unknown>) => 
 		| undefined;
 	const merged = overrides ? { ...fields, ...overrides } : fields;
 
+	// PATCH /api/v2/immobilien/<id> reads every field at the top level of the body.
+	// A nested `daten` object was stored unread under daten.daten by older servers
+	// (200 OK, nothing changed), so all fields are sent flat. datenJson goes first
+	// so that the explicit options below win.
+	if (merged.datenJson) {
+		const raw = resolveExpressionValue(merged.datenJson);
+		const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+			Object.assign(payload, parsed);
+		}
+	}
+
 	if (merged.name) {
 		payload.name = resolveExpressionValue(merged.name);
 	}
@@ -206,34 +218,20 @@ export const buildImmobilieUpdateBody = (parameter: Record<string, unknown>) => 
 		payload.preview_image_id = previewImageId || null;
 	}
 
-	const daten: Record<string, unknown> = {};
 	if (merged.adresse) {
-		daten.adresse = resolveExpressionValue(merged.adresse);
+		payload.adresse = resolveExpressionValue(merged.adresse);
 	}
 	if (merged.kaufpreis !== undefined) {
-		daten.kaufpreis = resolveExpressionValue(merged.kaufpreis);
+		payload.kaufpreis = resolveExpressionValue(merged.kaufpreis);
 	}
 	if (merged.flaeche !== undefined) {
-		daten.wohnflaeche = resolveExpressionValue(merged.flaeche);
+		payload.wohnflaeche = resolveExpressionValue(merged.flaeche);
 	}
 	if (merged.baujahr !== undefined) {
-		daten.baujahr = resolveExpressionValue(merged.baujahr);
+		payload.baujahr = resolveExpressionValue(merged.baujahr);
 	}
 	if (merged.zustand) {
-		daten.zustand = resolveExpressionValue(merged.zustand);
-	}
-	if (merged.datenJson) {
-		const raw = resolveExpressionValue(merged.datenJson);
-		const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
-		if (parsed && typeof parsed === 'object') {
-			Object.assign(daten, parsed);
-		}
-	}
-
-	if (merged.resetDaten === true) {
-		payload.daten = {};
-	} else if (Object.keys(daten).length > 0) {
-		payload.daten = daten;
+		payload.zustand = resolveExpressionValue(merged.zustand);
 	}
 
 	if (Object.keys(payload).length === 0) {
@@ -672,14 +670,8 @@ export const immobilieDescription: INodeProperties[] = [
 				name: 'datenJson',
 				type: 'string',
 				default: '',
-				description: 'Optional JSON string merged into the immobilie daten payload',
-			},
-			{
-				displayName: 'Reset Daten',
-				name: 'resetDaten',
-				type: 'boolean',
-				default: false,
-				description: 'Whether to reset existing daten before applying updates',
+				description:
+					'Optional JSON object with further fields, e.g. {"zins": 3.5}. Sent like the fields above; only the given fields change. Explicit fields win.',
 			},
 			{
 				displayName: 'Type',
