@@ -99,7 +99,7 @@ describe('buildImmobilieCreateBody', () => {
 });
 
 describe('buildImmobilieUpdateBody', () => {
-	it('sends all update fields flat, never nested under daten', () => {
+	it('sends the explicit fields flat and datenJson in the daten envelope', () => {
 		const payload = buildImmobilieUpdateBody({
 			updateFields: {
 				name: 'Objekt Neu',
@@ -135,11 +135,11 @@ describe('buildImmobilieUpdateBody', () => {
 			wohnflaeche: 100,
 			baujahr: 2005,
 			zustand: 'Saniert',
-			foo: 'bar',
+			daten: { foo: 'bar' },
 		});
 	});
 
-	it('lets explicit fields win over datenJson', () => {
+	it('sends explicit fields at the top level, where they win over datenJson on the server', () => {
 		const payload = buildImmobilieUpdateBody({
 			updateFields: {
 				name: 'Explizit',
@@ -151,7 +151,25 @@ describe('buildImmobilieUpdateBody', () => {
 		expect(payload).toEqual({
 			name: 'Explizit',
 			kaufpreis: 300000,
-			zins: 3.5,
+			daten: { name: 'Aus JSON', kaufpreis: 1, zins: 3.5 },
+		});
+	});
+
+	it('keeps datenJson in the daten envelope so mirrored GET values cannot break the update', () => {
+		// "GET → ändern → Update": datenJson spiegelt das alte daten-Objekt samt
+		// status_id/bemerkung. Flach gesendet, lehnt das Backend status_id mit
+		// 400 STATUS_VIA_PUT ab und bemerkung überschreibt die Notizen. Im
+		// Umschlag verwirft das Backend genau diese Altlasten mit Hinweis.
+		const payload = buildImmobilieUpdateBody({
+			updateFields: {
+				kaufpreis: 300000,
+				datenJson: '{"status_id":7,"bemerkung":"alt","zins":3.5}',
+			},
+		});
+
+		expect(payload).toEqual({
+			kaufpreis: 300000,
+			daten: { status_id: 7, bemerkung: 'alt', zins: 3.5 },
 		});
 	});
 
