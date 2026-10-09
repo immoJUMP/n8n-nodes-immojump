@@ -180,15 +180,17 @@ export const buildImmobilieUpdateBody = (parameter: Record<string, unknown>) => 
 		| undefined;
 	const merged = overrides ? { ...fields, ...overrides } : fields;
 
-	// PATCH /api/v2/immobilien/<id> reads every field at the top level of the body.
-	// A nested `daten` object was stored unread under daten.daten by older servers
-	// (200 OK, nothing changed), so all fields are sent flat. datenJson goes first
-	// so that the explicit options below win.
+	// PATCH /api/v2/immobilien/<id> reads the explicit options at the top level.
+	// datenJson stays in the `daten` envelope: the server unpacks it, lets the
+	// top level win and drops values mirrored from a GET (status_id, bemerkung,
+	// property_type …) with a hint. Sent flat, a mirrored status_id would fail the
+	// whole update with 400 STATUS_VIA_PUT and an old bemerkung would overwrite
+	// the notes.
 	if (merged.datenJson) {
 		const raw = resolveExpressionValue(merged.datenJson);
 		const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
 		if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-			Object.assign(payload, parsed);
+			payload.daten = parsed;
 		}
 	}
 
@@ -683,7 +685,7 @@ export const immobilieDescription: INodeProperties[] = [
 				type: 'string',
 				default: '',
 				description:
-					'Optional JSON object with further fields, e.g. {"zins": 3.5}. Sent like the fields above; only the given fields change. Explicit fields win.',
+					'Optional JSON object with further fields, e.g. {"zins": 3.5}. Sent as the daten block; only the given fields change and the fields above win. Status, name and notes from a mirrored GET are ignored there.',
 			},
 			{
 				displayName: 'Type',
