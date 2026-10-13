@@ -38,7 +38,7 @@ describe('buildImmobilieCreateBody', () => {
 			daten: {
 				adresse: 'Street 1',
 				kaufpreis: 120000,
-				wohnflaeche: 85,
+				qm: 85,
 				baujahr: 1999,
 				zustand: 'Gut',
 				foo: 'bar',
@@ -132,7 +132,7 @@ describe('buildImmobilieUpdateBody', () => {
 			preview_image_id: null,
 			adresse: 'Street 2',
 			kaufpreis: 250000,
-			wohnflaeche: 100,
+			qm: 100,
 			baujahr: 2005,
 			zustand: 'Saniert',
 			daten: { foo: 'bar' },
@@ -297,4 +297,18 @@ it('offers the source-aware overview through the shared backend route', () => {
         url: '=/api/immobilien/{{$parameter.immobilieId}}/intelligence'});
     const id = immobilieDescription.find(p => p.name === 'immobilieId')!;
     expect(id.displayOptions?.show?.operation).toContain('getIntelligence');
+});
+
+describe('immobilie update routing', () => {
+	// PATCH routes only "qm" into the unit the calculation reads; "wohnflaeche"
+	// used to end up in daten.wohnflaeche and was ignored (finding 2026-10-13).
+	it('sends the living area as qm in the query string as well', () => {
+		const operationProperty = immobilieDescription.find((property) => property.name === 'operation') as
+			| { options?: Array<{ value: string; routing?: { request?: { qs?: Record<string, unknown> } } }> }
+			| undefined;
+		const qs = operationProperty?.options?.find((option) => option.value === 'update')?.routing?.request?.qs;
+
+		expect(qs?.qm).toBe('={{$parameter.updateFields?.flaeche || undefined}}');
+		expect(qs).not.toHaveProperty('wohnflaeche');
+	});
 });
