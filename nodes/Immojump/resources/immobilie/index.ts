@@ -76,7 +76,8 @@ export const buildImmobilieCreateBody = (
 		daten.kaufpreis = resolveExpressionValue(merged.kaufpreis);
 	}
 	if (merged.flaeche !== undefined) {
-		daten.wohnflaeche = resolveExpressionValue(merged.flaeche);
+		// The backend calls the living area "qm"; it lives on the units.
+		daten.qm = resolveExpressionValue(merged.flaeche);
 	}
 	if (merged.baujahr !== undefined) {
 		daten.baujahr = resolveExpressionValue(merged.baujahr);
@@ -227,7 +228,9 @@ export const buildImmobilieUpdateBody = (parameter: Record<string, unknown>) => 
 		payload.kaufpreis = resolveExpressionValue(merged.kaufpreis);
 	}
 	if (merged.flaeche !== undefined) {
-		payload.wohnflaeche = resolveExpressionValue(merged.flaeche);
+		// Only "qm" reaches the unit the calculation reads; "wohnflaeche" used to
+		// land in daten.wohnflaeche and was ignored.
+		payload.qm = resolveExpressionValue(merged.flaeche);
 	}
 	if (merged.baujahr !== undefined) {
 		payload.baujahr = resolveExpressionValue(merged.baujahr);
@@ -372,7 +375,7 @@ export const immobilieDescription: INodeProperties[] = [
 							preview_image_id: '={{$parameter.updateFields?.previewImageId || undefined}}',
 							adresse: '={{$parameter.updateFields?.adresse || undefined}}',
 							kaufpreis: '={{$parameter.updateFields?.kaufpreis || undefined}}',
-							wohnflaeche: '={{$parameter.updateFields?.flaeche || undefined}}',
+							qm: '={{$parameter.updateFields?.flaeche || undefined}}',
 							baujahr: '={{$parameter.updateFields?.baujahr || undefined}}',
 							zustand: '={{$parameter.updateFields?.zustand || undefined}}',
 						},
