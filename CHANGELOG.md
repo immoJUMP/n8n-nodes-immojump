@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.12.0](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.11.4...v1.12.0) (2026-10-22)
+
+
+### Features
+
+* **theo-intelligence:** expose property assessment and investor feedback ([c63d791](https://github.com/immoJUMP/n8n-nodes-immojump/commit/c63d79154bf48bfd7924c5a1761052430c089fba))
+
+
+### Bug Fixes
+
+* **immobilie:** datenJson bleibt im daten-Umschlag ([e9b1856](https://github.com/immoJUMP/n8n-nodes-immojump/commit/e9b18562d9f1de8a26fc23bc968933d7d63eaa84))
+* **immobilie:** Update sendet Felder flach statt verschachtelt unter daten ([038f400](https://github.com/immoJUMP/n8n-nodes-immojump/commit/038f400066cfdf99ced61b64e069dc85466b8b28))
+* **immobilie:** Wohnfläche als qm senden, damit sie in der Kalkulation ankommt ([55ae1f6](https://github.com/immoJUMP/n8n-nodes-immojump/commit/55ae1f6eb6a4a374ad0d06ae30e9fcf9b829e5dc))
+
 ## [1.11.4](https://github.com/immoJUMP/n8n-nodes-immojump/compare/v1.11.3...v1.11.4) (2026-02-23)
 
 
